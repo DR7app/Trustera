@@ -95,35 +95,17 @@ export const handler: Handler = async (event) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Documento PDF non trovato' }) }
         }
 
-        // ── Accumulative signing: use latest signed PDF as base if other signers already signed ──
-        let basePdfUrl = originalPdfUrl
-        let isFirstSigner = true
-        if (sigRequest.contract_id) {
-            const { data: signedRequests } = await supabase
-                .from('signature_requests')
-                .select('id, signed_pdf_url, signed_at')
-                .eq('contract_id', sigRequest.contract_id)
-                .eq('status', 'signed')
-                .neq('id', sigRequest.id)
-                .order('signed_at', { ascending: false })
-                .limit(1)
-
-            if (signedRequests && signedRequests.length > 0 && signedRequests[0].signed_pdf_url) {
-                basePdfUrl = signedRequests[0].signed_pdf_url
-                isFirstSigner = false
-                console.log(`[signature-complete] Using accumulated PDF from previous signer as base`)
-            }
-        }
-
-        // Download the original PDF for hash verification
+        // Download the original (CURRENT) contract PDF and compute its hash FIRST.
+        // Serve sia per il controllo integrità sia per decidere se l'eventuale
+        // firma accumulata di un altro firmatario è sulla STESSA versione corrente.
         const origPdfResponse = await fetch(originalPdfUrl)
         if (!origPdfResponse.ok) {
             return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile scaricare il PDF' }) }
         }
         const originalPdfBytes = new Uint8Array(await origPdfResponse.arrayBuffer())
+        const currentHash = crypto.createHash('sha256').update(Buffer.from(originalPdfBytes)).digest('hex')
 
         // Verify PDF integrity (hash must match what was stored at init)
-        const currentHash = crypto.createHash('sha256').update(Buffer.from(originalPdfBytes)).digest('hex')
         if (sigRequest.original_pdf_hash && currentHash !== sigRequest.original_pdf_hash) {
             await supabase.from('signature_audit_trail').insert({
                 signature_request_id: sigRequest.id,
@@ -136,6 +118,33 @@ export const handler: Handler = async (event) => {
             return {
                 statusCode: 409,
                 body: JSON.stringify({ error: 'Il documento e stato modificato dopo la creazione della richiesta di firma. Genera una nuova richiesta.' })
+            }
+        }
+
+        // ── Accumulative signing: usa l'ultimo PDF firmato come base SOLO se quel
+        // firmatario ha firmato la STESSA versione corrente del contratto (stesso
+        // original_pdf_hash). BUG 2026-06: dopo "modifica + rigenera contratto"
+        // restava una firma vecchia su una versione OBSOLETA; accumulando su
+        // quella, il PDF firmato finale mostrava i DATI VECCHI. Filtrando per
+        // original_pdf_hash === currentHash si riparte sempre dalla versione
+        // corrente quando il contratto è stato rigenerato. ──
+        let basePdfUrl = originalPdfUrl
+        let isFirstSigner = true
+        if (sigRequest.contract_id) {
+            const { data: signedRequests } = await supabase
+                .from('signature_requests')
+                .select('id, signed_pdf_url, signed_at, original_pdf_hash')
+                .eq('contract_id', sigRequest.contract_id)
+                .eq('status', 'signed')
+                .eq('original_pdf_hash', currentHash)
+                .neq('id', sigRequest.id)
+                .order('signed_at', { ascending: false })
+                .limit(1)
+
+            if (signedRequests && signedRequests.length > 0 && signedRequests[0].signed_pdf_url) {
+                basePdfUrl = signedRequests[0].signed_pdf_url
+                isFirstSigner = false
+                console.log(`[signature-complete] Using accumulated PDF from previous signer (same version) as base`)
             }
         }
 
