@@ -9,7 +9,7 @@ const supabase = createClient(
 )
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
-const SITE_URL = process.env.SITE_URL || 'https://trustera360.app'
+const SITE_URL = process.env.SITE_URL || 'https://dr7trust.com'
 
 async function logAudit(documentId: string, action: string, email?: string, ip?: string, userAgent?: string, metadata?: Record<string, any>) {
   try {
@@ -84,7 +84,7 @@ function buildSigningEmailHtml(signerName: string, senderName: string, documentN
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
+              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
               <p style="margin: 8px 0 0; color: #666; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px;">Firma Elettronica</p>
             </td>
           </tr>
@@ -116,7 +116,7 @@ function buildSigningEmailHtml(signerName: string, senderName: string, documentN
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
                 Trustera - Infrastructure for Digital Trust<br/>
-                <a href="https://trustera360.app" style="color: #16a34a; text-decoration: none;">www.trustera360.app</a>
+                <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
           </tr>
@@ -151,7 +151,7 @@ function buildApprovalEmailHtml(
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
+              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
               <p style="margin: 8px 0 0; color: #666; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px;">Richiesta di Approvazione</p>
             </td>
           </tr>
@@ -193,7 +193,7 @@ function buildApprovalEmailHtml(
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
                 Trustera - Infrastructure for Digital Trust<br/>
-                <a href="https://trustera360.app" style="color: #16a34a; text-decoration: none;">www.trustera360.app</a>
+                <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
           </tr>
@@ -310,11 +310,11 @@ export async function processSendSigners(
     } else {
       try {
         await resend.emails.send({
-          from: 'Trustera <info@trustera360.app>',
-          replyTo: 'info@trustera360.app',
+          from: 'Trustera <info@dr7trust.com>',
+          replyTo: 'info@dr7trust.com',
           to: signer.email!,
           subject: `${senderName} ti ha inviato un documento da firmare`,
-          text: `Ciao ${signer.name},\n\n${senderName} ti ha inviato un documento da firmare: ${doc.name}\n\nClicca qui per visualizzare e firmare il documento:\n${signingUrl}\n\nQuesto link scade tra 12 ore.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+          text: `Ciao ${signer.name},\n\n${senderName} ti ha inviato un documento da firmare: ${doc.name}\n\nClicca qui per visualizzare e firmare il documento:\n${signingUrl}\n\nQuesto link scade tra 12 ore.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
           html: buildSigningEmailHtml(signer.name, senderName, doc.name, signingUrl)
         })
         await logAudit(documentId, 'email_sent', signer.email, undefined, undefined, { channel: 'email', signer_name: signer.name })
@@ -415,11 +415,11 @@ export const handler: Handler = async (event) => {
 
         try {
           await resend.emails.send({
-            from: 'Trustera <info@trustera360.app>',
-            replyTo: 'info@trustera360.app',
+            from: 'Trustera <info@dr7trust.com>',
+            replyTo: 'info@dr7trust.com',
             to: approver.email,
             subject: `${senderName} richiede la tua approvazione: ${doc.name}`,
-            text: `Ciao ${approver.name},\n\n${senderName} richiede la tua approvazione per il documento "${doc.name}".\n\nFirmatari previsti: ${signerNames.join(', ')}\n\nApprova: ${approveUrl}\nRifiuta: ${rejectUrl}\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+            text: `Ciao ${approver.name},\n\n${senderName} richiede la tua approvazione per il documento "${doc.name}".\n\nFirmatari previsti: ${signerNames.join(', ')}\n\nApprova: ${approveUrl}\nRifiuta: ${rejectUrl}\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
             html: buildApprovalEmailHtml(approver.name, senderName, doc.name, signerNames, approveUrl, rejectUrl)
           })
           console.log('[trustera-send-signing] Approval email sent to:', approver.email)

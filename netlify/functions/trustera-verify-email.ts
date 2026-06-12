@@ -6,7 +6,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const SITE_URL = process.env.SITE_URL || 'https://trustera360.app'
+const SITE_URL = process.env.SITE_URL || 'https://dr7trust.com'
 
 export const handler: Handler = async (event) => {
     const params = event.queryStringParameters || {}

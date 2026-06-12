@@ -7,7 +7,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const SITE_URL = process.env.SITE_URL || 'https://trustera360.app'
+const SITE_URL = process.env.SITE_URL || 'https://dr7trust.com'
 
 export const handler: Handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -88,11 +88,11 @@ export const handler: Handler = async (event) => {
         const resend = new Resend(resendApiKey)
 
         const { error: emailError } = await resend.emails.send({
-            from: 'Trustera <info@trustera360.app>',
-            replyTo: 'info@trustera360.app',
+            from: 'Trustera <info@dr7trust.com>',
+            replyTo: 'info@dr7trust.com',
             to: email,
             subject: 'Conferma il tuo account Trustera',
-            text: `Benvenuto su Trustera!\n\nCiao ${fullName}, conferma il tuo indirizzo email per attivare il tuo account.\n\nClicca qui per confermare: ${verifyUrl}\n\nSe non hai creato un account su Trustera, ignora questa email.\nIl link scade tra 24 ore.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+            text: `Benvenuto su Trustera!\n\nCiao ${fullName}, conferma il tuo indirizzo email per attivare il tuo account.\n\nClicca qui per confermare: ${verifyUrl}\n\nSe non hai creato un account su Trustera, ignora questa email.\nIl link scade tra 24 ore.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
             html: `<!DOCTYPE html>
 <html lang="it" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -108,7 +108,7 @@ export const handler: Handler = async (event) => {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 40px 40px 0; text-align: center;">
-              <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
+              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
             </td>
           </tr>
           <tr>
@@ -150,7 +150,7 @@ export const handler: Handler = async (event) => {
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
                 Trustera - Infrastructure for Digital Trust<br/>
-                <a href="https://trustera360.app" style="color: #16a34a; text-decoration: none;">www.trustera360.app</a>
+                <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
           </tr>

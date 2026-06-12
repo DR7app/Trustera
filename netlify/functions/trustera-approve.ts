@@ -9,7 +9,7 @@ const supabase = createClient(
 )
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
-const SITE_URL = process.env.SITE_URL || 'https://trustera360.app'
+const SITE_URL = process.env.SITE_URL || 'https://dr7trust.com'
 
 async function logAudit(documentId: string, action: string, email?: string, ip?: string, userAgent?: string, metadata?: Record<string, any>) {
   try {
@@ -38,7 +38,7 @@ function buildRejectionNotificationHtml(
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     <p style="margin:0 0 12px;">Ciao <strong>${ownerName}</strong>,</p>
@@ -58,7 +58,7 @@ function buildRejectionNotificationHtml(
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
       Trustera - Infrastructure for Digital Trust<br/>
-      <a href="https://trustera360.app" style="color:#16a34a;text-decoration:none;">www.trustera360.app</a>
+      <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
 </table>
@@ -168,11 +168,11 @@ export const handler: Handler = async (event) => {
           if (ownerUser?.email) {
             const ownerName = ownerUser.user_metadata?.full_name || ownerUser.email
             await resend.emails.send({
-              from: 'Trustera <info@trustera360.app>',
-              replyTo: 'info@trustera360.app',
+              from: 'Trustera <info@dr7trust.com>',
+              replyTo: 'info@dr7trust.com',
               to: ownerUser.email,
               subject: `Documento rifiutato: ${matchedDoc.name}`,
-              text: `Ciao ${ownerName},\n\n${matchedApprover.name} ha rifiutato l'invio del documento "${matchedDoc.name}".${reason ? `\n\nMotivo: ${reason}` : ''}\n\nPuoi modificare il documento e riprovare dalla tua dashboard.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+              text: `Ciao ${ownerName},\n\n${matchedApprover.name} ha rifiutato l'invio del documento "${matchedDoc.name}".${reason ? `\n\nMotivo: ${reason}` : ''}\n\nPuoi modificare il documento e riprovare dalla tua dashboard.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
               html: buildRejectionNotificationHtml(ownerName, matchedApprover.name, matchedDoc.name, reason || '')
             })
           }

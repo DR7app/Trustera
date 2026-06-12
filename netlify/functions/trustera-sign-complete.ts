@@ -45,8 +45,8 @@ async function sendSignedPdfEmail(
       : `Hai firmato: ${documentName}`
 
     const bodyText = isOwner
-      ? `Il documento "${documentName}" è stato firmato da tutti i firmatari (${signerNames}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`
-      : `Hai firmato il documento "${documentName}".\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`
+      ? `Il documento "${documentName}" è stato firmato da tutti i firmatari (${signerNames}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
+      : `Hai firmato il documento "${documentName}".\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
 
     const bodyHtml = `<!DOCTYPE html>
 <html lang="it"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -55,7 +55,7 @@ async function sendSignedPdfEmail(
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     ${isOwner
@@ -72,7 +72,7 @@ async function sendSignedPdfEmail(
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
       Trustera - Infrastructure for Digital Trust<br/>
-      <a href="https://trustera360.app" style="color:#16a34a;text-decoration:none;">www.trustera360.app</a>
+      <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
 </table>
@@ -82,8 +82,8 @@ async function sendSignedPdfEmail(
     const safeName = documentName.replace(/[^a-zA-Z0-9._-]/g, '_')
 
     await resend.emails.send({
-      from: 'Trustera <info@trustera360.app>',
-      replyTo: 'info@trustera360.app',
+      from: 'Trustera <info@dr7trust.com>',
+      replyTo: 'info@dr7trust.com',
       to,
       subject,
       text: bodyText,
@@ -218,7 +218,7 @@ async function buildSignedPdf(
   }
 
   // ── Trustera Verified Seal on last page ──────────────────────────────────
-  const verifyUrl = `https://trustera360.app/verify/${originalHash}`
+  const verifyUrl = `https://dr7trust.com/verify/${originalHash}`
   const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', width: 300, margin: 1 })
   const qrImage = await pdfDoc.embedPng(qrPng)
 
@@ -227,9 +227,9 @@ async function buildSignedPdf(
   let iconImage: any = null
   try {
     const [logoPngResp, logoJpgResp, iconResp] = await Promise.all([
-      fetch('https://trustera360.app/trustera-logo.png'),
-      fetch('https://trustera360.app/trustera-logo.jpeg'),
-      fetch('https://trustera360.app/trustera-icon.jpeg'),
+      fetch('https://dr7trust.com/trustera-logo.png'),
+      fetch('https://dr7trust.com/trustera-logo.jpeg'),
+      fetch('https://dr7trust.com/trustera-icon.jpeg'),
     ])
     if (logoPngResp.ok) {
       logoImage = await pdfDoc.embedPng(new Uint8Array(await logoPngResp.arrayBuffer()))
@@ -734,10 +734,10 @@ export const handler: Handler = async (event) => {
           if (!approver.email) continue
           try {
             const approverSubject = `Documento firmato: ${doc.name}`
-            const approverBodyText = `Ciao ${approver.name},\n\nIl documento "${doc.name}" che hai approvato è stato firmato da tutti i firmatari (${signerNamesList}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`
+            const approverBodyText = `Ciao ${approver.name},\n\nIl documento "${doc.name}" che hai approvato è stato firmato da tutti i firmatari (${signerNamesList}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
             await resend.emails.send({
-              from: 'Trustera <info@trustera360.app>',
-              replyTo: 'info@trustera360.app',
+              from: 'Trustera <info@dr7trust.com>',
+              replyTo: 'info@dr7trust.com',
               to: approver.email,
               subject: approverSubject,
               text: approverBodyText,
@@ -748,7 +748,7 @@ export const handler: Handler = async (event) => {
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     <p style="margin:0 0 12px;">Ciao <strong>${approver.name}</strong>,</p>
@@ -765,7 +765,7 @@ export const handler: Handler = async (event) => {
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
       Trustera - Infrastructure for Digital Trust<br/>
-      <a href="https://trustera360.app" style="color:#16a34a;text-decoration:none;">www.trustera360.app</a>
+      <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
 </table>

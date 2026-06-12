@@ -254,7 +254,7 @@ export default function VerifyPage() {
             <div className="flex items-center justify-center gap-2 mt-2">
               <img src="/trustera-logo.png" alt="Trustera" className="h-6" />
               <span className="text-xs text-green-600 font-medium">
-                <a href="https://trustera360.app" target="_blank" rel="noreferrer">www.trustera360.app</a>
+                <a href="https://dr7trust.com" target="_blank" rel="noreferrer">www.dr7trust.com</a>
               </span>
             </div>
           </div>

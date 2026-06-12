@@ -280,14 +280,14 @@ export const handler: Handler = async (event) => {
         // ── Trustera Verified Seals with QR code on last page ──
         // FIRMA LOCATORE gets a seal too (Ilenia Campagnola), same format as guidatore
         {
-            const verifyUrl = `https://trustera360.app/verify/${currentHash}`
+            const verifyUrl = `https://dr7trust.com/verify/${currentHash}`
             const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', width: 300, margin: 1 })
             const qrImage = await pdfDoc.embedPng(qrPng)
 
             // Embed Trustera logo
             let logoImage: any = null
             try {
-                const logoResp = await fetch('https://trustera360.app/trustera-logo.png')
+                const logoResp = await fetch('https://dr7trust.com/trustera-logo.png')
                 if (logoResp.ok) {
                     logoImage = await pdfDoc.embedPng(new Uint8Array(await logoResp.arrayBuffer()))
                 }

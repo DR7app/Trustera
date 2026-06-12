@@ -594,8 +594,8 @@ export default function SignPage() {
             )}
             <p className="text-xs text-gray-400 mt-6 leading-relaxed">
               Firma gratuita in pochi secondi su{' '}
-              <a href="https://trustera360.app" className="text-green-600 hover:underline break-all">
-                trustera360.app
+              <a href="https://dr7trust.com" className="text-green-600 hover:underline break-all">
+                dr7trust.com
               </a>
             </p>
           </div>

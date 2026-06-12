@@ -71,7 +71,7 @@ function buildOtpEmailHtml(otp: string): string {
         <table role="presentation" width="400" cellpadding="0" cellspacing="0" style="max-width: 400px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://trustera360.app/trustera-logo.jpeg" alt="Trustera" width="120" style="height: auto; max-height: 48px;" />
+              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" width="120" style="height: auto; max-height: 48px;" />
             </td>
           </tr>
           <tr>
@@ -100,7 +100,7 @@ function buildOtpEmailHtml(otp: string): string {
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
                 Trustera - Infrastructure for Digital Trust<br/>
-                <a href="https://trustera360.app" style="color: #16a34a; text-decoration: none;">www.trustera360.app</a>
+                <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
           </tr>
@@ -171,11 +171,11 @@ export const handler: Handler = async (event) => {
       if (channel === 'email') {
         if (signerRow.signer_email) {
           await resend.emails.send({
-            from: 'Trustera <info@trustera360.app>',
-            replyTo: 'info@trustera360.app',
+            from: 'Trustera <info@dr7trust.com>',
+            replyTo: 'info@dr7trust.com',
             to: signerRow.signer_email,
             subject: 'Codice di verifica Trustera',
-            text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+            text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
             html: buildOtpEmailHtml(otp)
           })
         } else if (signerPhone) {
@@ -238,11 +238,11 @@ export const handler: Handler = async (event) => {
 
     if (channel === 'email') {
       await resend.emails.send({
-        from: 'Trustera <info@trustera360.app>',
-        replyTo: 'info@trustera360.app',
+        from: 'Trustera <info@dr7trust.com>',
+        replyTo: 'info@dr7trust.com',
         to: doc.signer_email,
         subject: 'Codice di verifica Trustera',
-        text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://trustera360.app`,
+        text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
         html: buildOtpEmailHtml(otp)
       })
     }
