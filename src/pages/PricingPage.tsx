@@ -79,7 +79,7 @@ function BillingToggle({ annual, onChange }: BillingToggleProps) {
       <button
         onClick={() => onChange(false)}
         className={`transition-colors ${
-          !annual ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+          !annual ? 'text-white' : 'text-gray-400 hover:text-gray-200'
         }`}
       >
         Mensile
@@ -88,7 +88,7 @@ function BillingToggle({ annual, onChange }: BillingToggleProps) {
       <button
         onClick={() => onChange(!annual)}
         className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-        style={{ backgroundColor: annual ? '#16a34a' : '#d1d5db' }}
+        style={{ backgroundColor: annual ? '#16a34a' : '#3f3f46' }}
         role="switch"
         aria-checked={annual}
         aria-label="Fatturazione annuale"
@@ -103,11 +103,11 @@ function BillingToggle({ annual, onChange }: BillingToggleProps) {
       <button
         onClick={() => onChange(true)}
         className={`flex items-center gap-1.5 transition-colors ${
-          annual ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+          annual ? 'text-white' : 'text-gray-400 hover:text-gray-200'
         }`}
       >
         Annuale
-        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+        <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-semibold text-green-400">
           -20%
         </span>
       </button>
@@ -123,7 +123,7 @@ function FeatureList({ features }: FeatureListProps) {
   return (
     <ul className="space-y-3">
       {features.map((feature) => (
-        <li key={feature} className="flex items-start gap-3 text-sm text-gray-600">
+        <li key={feature} className="flex items-start gap-3 text-sm text-gray-400">
           <CheckIcon />
           <span>{feature}</span>
         </li>
@@ -142,15 +142,15 @@ function FaqItem({ question, answer, defaultOpen = false }: FaqItemProps) {
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
+    <div className="border-b border-white/10 last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between py-5 text-left"
         aria-expanded={open}
       >
-        <span className="text-base font-semibold text-gray-900">{question}</span>
+        <span className="text-base font-semibold text-white">{question}</span>
         <span
-          className={`ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-transform ${
+          className={`ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 text-gray-400 transition-transform ${
             open ? 'rotate-45' : ''
           }`}
           aria-hidden="true"
@@ -161,7 +161,7 @@ function FaqItem({ question, answer, defaultOpen = false }: FaqItemProps) {
         </span>
       </button>
       {open && (
-        <p className="pb-5 text-sm leading-relaxed text-gray-500">{answer}</p>
+        <p className="pb-5 text-sm leading-relaxed text-gray-400">{answer}</p>
       )}
     </div>
   )
@@ -183,12 +183,12 @@ export default function PricingPage() {
         <p className="text-sm font-semibold uppercase tracking-widest text-green-600 mb-4">
           Pricing
         </p>
-        <h1 className="text-3xl sm:text-5xl font-bold leading-[1.1] text-[#0d3d2a] mb-5">
+        <h1 className="text-3xl sm:text-5xl font-bold leading-[1.1] text-white mb-5">
           Prezzi trasparenti.
           <br />
           Nessun costo nascosto.
         </h1>
-        <p className="text-base sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-base sm:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto">
           Crediamo che la chiarezza sia un valore. Ogni piano indica esattamente
           cosa ottieni, quanto paghi e cosa non ti verra mai addebitato a
           sorpresa.
@@ -199,7 +199,7 @@ export default function PricingPage() {
       {/* Section 1 — Piani Piattaforma                                        */}
       {/* ------------------------------------------------------------------ */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-12 sm:pb-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-[#0d3d2a] mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-white mb-3">
           Piani Piattaforma
         </h2>
         <p className="text-center text-gray-400 text-sm mb-8">
@@ -214,11 +214,11 @@ export default function PricingPage() {
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
           {/* Free card */}
-          <div className="flex flex-col bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:shadow-green-600/5 transition-shadow">
+          <div className="flex flex-col bg-white/[0.04] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-sm shadow-black/40 hover:shadow-md hover:shadow-green-600/5 transition-shadow">
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Free</h3>
+              <h3 className="text-xl font-bold text-white mb-1">Free</h3>
               <div className="flex items-end gap-1.5 mt-3">
-                <span className="text-5xl font-bold text-gray-900 leading-none">
+                <span className="text-5xl font-bold text-white leading-none">
                   €0
                 </span>
                 <span className="text-gray-400 text-sm pb-1">
@@ -227,7 +227,7 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+            <p className="text-sm text-gray-400 leading-relaxed mb-6">
               Piattaforma senza costo, sostenuta da iniziative promozionali e
               vantaggi commerciali per gli utenti che prestano consenso.
             </p>
@@ -245,7 +245,7 @@ export default function PricingPage() {
           </div>
 
           {/* Premium card */}
-          <div className="flex flex-col bg-white border-2 border-green-500/30 rounded-2xl p-6 sm:p-8 relative shadow-sm hover:shadow-md hover:shadow-green-600/5 transition-shadow">
+          <div className="flex flex-col bg-green-500/10 border-2 border-green-500/40 rounded-2xl p-6 sm:p-8 relative shadow-sm shadow-black/40 hover:shadow-md hover:shadow-green-600/5 transition-shadow">
             {/* PRO badge */}
             <div className="absolute -top-3.5 right-6">
               <span className="inline-flex items-center rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white shadow-sm shadow-green-600/40">
@@ -254,9 +254,9 @@ export default function PricingPage() {
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Premium</h3>
+              <h3 className="text-xl font-bold text-white mb-1">Premium</h3>
               <div className="flex items-end gap-1.5 mt-3">
-                <span className="text-5xl font-bold text-gray-900 leading-none">
+                <span className="text-5xl font-bold text-white leading-none">
                   --
                 </span>
                 <span className="text-gray-400 text-sm pb-1">
@@ -265,7 +265,7 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+            <p className="text-sm text-gray-400 leading-relaxed mb-6">
               Esperienza dedicata, senza utilizzo dei contatti per finalita
               promozionali di terzi.
             </p>
@@ -276,7 +276,7 @@ export default function PricingPage() {
 
             <button
               disabled
-              className="w-full text-center bg-gray-100 text-gray-400 font-bold py-3.5 rounded-xl cursor-not-allowed text-sm"
+              className="w-full text-center bg-white/5 text-gray-400 font-bold py-3.5 rounded-xl cursor-not-allowed text-sm"
             >
               Prossimamente
             </button>
@@ -287,17 +287,17 @@ export default function PricingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Section 2 — Piani API                                               */}
       {/* ------------------------------------------------------------------ */}
-      <section className="bg-gray-50 border-y border-gray-100">
+      <section className="bg-[#0a0a0a] border-y border-white/10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-green-600 mb-3">
                 Piani API
               </p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#0d3d2a] mb-3">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
                 Accesso API per sviluppatori
               </h2>
-              <p className="text-gray-500 text-sm leading-relaxed">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 I piani API sono disponibili esclusivamente su base annuale.
                 Contattaci per maggiori informazioni, per un preventivo
                 personalizzato o per ricevere la documentazione tecnica.
@@ -305,7 +305,7 @@ export default function PricingPage() {
             </div>
             <a
               href="mailto:info@dr7trust.it"
-              className="inline-flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 rounded-xl border border-green-600 px-6 py-3.5 text-sm font-bold text-green-700 hover:bg-green-50 transition-colors"
+              className="inline-flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 rounded-xl border border-green-600 px-6 py-3.5 text-sm font-bold text-green-400 hover:bg-green-500/10 transition-colors"
             >
               Contattaci
               <svg
@@ -392,7 +392,7 @@ export default function PricingPage() {
       {/* Section 4 — FAQ                                                     */}
       {/* ------------------------------------------------------------------ */}
       <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-[#0d3d2a] mb-2">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-white mb-2">
           Domande frequenti
         </h2>
         <p className="text-center text-gray-400 text-sm mb-10 break-words">
@@ -405,7 +405,7 @@ export default function PricingPage() {
           </a>
         </p>
 
-        <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white px-4 sm:px-6 shadow-sm">
+        <div className="divide-y divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-6 shadow-sm shadow-black/40">
           {FAQS.map((faq, index) => (
             <FaqItem
               key={faq.question}
@@ -420,12 +420,12 @@ export default function PricingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Bottom CTA                                                           */}
       {/* ------------------------------------------------------------------ */}
-      <section className="border-t border-gray-100 bg-gray-50">
+      <section className="border-t border-white/10 bg-[#0a0a0a]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#0d3d2a] mb-3">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
             Pronto a iniziare?
           </h2>
-          <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+          <p className="text-gray-400 text-sm mb-8 leading-relaxed">
             Crea il tuo account gratuitamente. Nessuna carta di credito
             richiesta, nessun costo nascosto.
           </p>

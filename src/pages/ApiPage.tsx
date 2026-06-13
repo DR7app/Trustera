@@ -91,7 +91,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-3xl sm:text-4xl font-bold text-[#0d3d2a] leading-snug">
+    <h2 className="text-3xl sm:text-4xl font-bold text-white leading-snug">
       {children}
     </h2>
   )
@@ -99,7 +99,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function SectionDescription({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed max-w-2xl">
+    <p className="mt-4 text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl">
       {children}
     </p>
   )
@@ -115,12 +115,12 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-4">
+    <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 shadow-black/40 shadow-sm hover:shadow-md transition-shadow">
+      <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
         {icon}
       </div>
-      <h3 className="text-base font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+      <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
+      <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -251,14 +251,14 @@ export default function ApiPage() {
               })}
             </code>
           </pre>
-          <p className="mt-4 text-center text-xs text-gray-500">
+          <p className="mt-4 text-center text-xs text-gray-400">
             REST API &middot; JSON &middot; Autenticazione Bearer Token
           </p>
         </div>
       </section>
 
       {/* ── 1. Integrazione semplice ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-white">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
@@ -278,10 +278,10 @@ export default function ApiPage() {
               {integrationCapabilities.map((cap) => (
                 <li
                   key={cap}
-                  className="flex items-start gap-3 bg-gray-50 rounded-xl px-5 py-4 border border-gray-100"
+                  className="flex items-start gap-3 bg-white/5 rounded-xl px-5 py-4 border border-white/10"
                 >
                   <CheckIcon />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-200">
                     {cap}
                   </span>
                 </li>
@@ -292,18 +292,18 @@ export default function ApiPage() {
       </section>
 
       {/* ── 2. Embedded signing ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-gray-50">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-[#0a0a0a]">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* visual placeholder */}
-            <div className="order-2 lg:order-1 bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="order-2 lg:order-1 bg-white/[0.04] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-black/40 shadow-sm">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                 <span className="text-xs text-gray-400 font-mono break-all">
                   embedded-signing-iframe
                 </span>
               </div>
-              <div className="bg-gray-50 rounded-xl border border-dashed border-gray-200 h-48 flex flex-col items-center justify-center gap-3">
+              <div className="bg-white/5 rounded-xl border border-dashed border-white/10 h-48 flex flex-col items-center justify-center gap-3">
                 <svg
                   className="w-10 h-10 text-green-300"
                   fill="none"
@@ -352,7 +352,7 @@ export default function ApiPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckIcon />
-                    <span className="text-sm text-gray-600">{item}</span>
+                    <span className="text-sm text-gray-400">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -362,7 +362,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── 3. Webhook e automazioni ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-white">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10 sm:mb-16">
             <SectionLabel>Webhook e automazioni</SectionLabel>
@@ -396,8 +396,8 @@ export default function ApiPage() {
             ))}
           </div>
 
-          <div className="mt-10 bg-gray-50 border border-gray-100 rounded-2xl p-6 max-w-xl mx-auto text-center">
-            <p className="text-sm text-gray-500 leading-relaxed">
+          <div className="mt-10 bg-white/5 border border-white/10 rounded-2xl p-6 max-w-xl mx-auto text-center">
+            <p className="text-sm text-gray-400 leading-relaxed">
               Configura un endpoint HTTPS e DR7 Trust inviera un payload JSON
               firmato ogni volta che un evento viene generato. Nessun polling,
               nessun ritardo.
@@ -407,7 +407,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── 4. Template e gestione documenti ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-gray-50">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-[#0a0a0a]">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
@@ -425,7 +425,7 @@ export default function ApiPage() {
                 {templateTypes.map((t) => (
                   <li key={t} className="flex items-start gap-3">
                     <CheckIcon />
-                    <span className="text-sm text-gray-600">{t}</span>
+                    <span className="text-sm text-gray-400">{t}</span>
                   </li>
                 ))}
               </ul>
@@ -436,26 +436,26 @@ export default function ApiPage() {
                 {
                   label: 'Contratto NDA',
                   fields: '3 campi firma',
-                  color: 'bg-green-50 border-green-100',
-                  textColor: 'text-green-700',
+                  color: 'bg-green-500/10 border-green-500/20',
+                  textColor: 'text-green-300',
                 },
                 {
                   label: 'Accordo commerciale',
                   fields: '5 campi firma',
-                  color: 'bg-sky-50 border-sky-100',
-                  textColor: 'text-sky-700',
+                  color: 'bg-sky-500/10 border-sky-500/20',
+                  textColor: 'text-sky-300',
                 },
                 {
                   label: 'Modulo interno',
                   fields: '2 campi firma',
-                  color: 'bg-violet-50 border-violet-100',
-                  textColor: 'text-violet-700',
+                  color: 'bg-violet-500/10 border-violet-500/20',
+                  textColor: 'text-violet-300',
                 },
                 {
                   label: 'Documento custom',
                   fields: 'Variabile',
-                  color: 'bg-amber-50 border-amber-100',
-                  textColor: 'text-amber-700',
+                  color: 'bg-amber-500/10 border-amber-500/20',
+                  textColor: 'text-amber-300',
                 },
               ].map((card) => (
                 <div
@@ -467,10 +467,10 @@ export default function ApiPage() {
                   >
                     Template
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 mb-1">
+                  <p className="text-sm font-semibold text-gray-200 mb-1">
                     {card.label}
                   </p>
-                  <p className="text-xs text-gray-500">{card.fields}</p>
+                  <p className="text-xs text-gray-400">{card.fields}</p>
                 </div>
               ))}
             </div>
@@ -479,7 +479,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── 5 & 6. Sicurezza + Sandbox ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-white">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Sicurezza */}
@@ -530,8 +530,8 @@ export default function ApiPage() {
             </div>
 
             {/* Sandbox */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-8 shadow-sm">
-              <div className="w-10 h-10 bg-green-50 border border-green-100 rounded-xl flex items-center justify-center mb-6">
+            <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-black/40 shadow-sm">
+              <div className="w-10 h-10 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center mb-6">
                 <svg
                   className="w-5 h-5 text-green-600"
                   fill="none"
@@ -549,10 +549,10 @@ export default function ApiPage() {
               <p className="text-xs font-semibold text-green-600 uppercase tracking-widest mb-3">
                 Ambiente Sandbox
               </p>
-              <h3 className="text-2xl font-bold text-[#0d3d2a] mb-3">
+              <h3 className="text-2xl font-bold text-white mb-3">
                 Sviluppa senza rischi
               </h3>
-              <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
                 Ogni account include un ambiente sandbox dedicato. Sviluppa,
                 testa e itera senza toccare dati reali o documenti di
                 produzione.
@@ -561,7 +561,7 @@ export default function ApiPage() {
                 {sandboxCapabilities.map((c) => (
                   <li key={c} className="flex items-start gap-3">
                     <CheckIcon />
-                    <span className="text-sm text-gray-600">{c}</span>
+                    <span className="text-sm text-gray-400">{c}</span>
                   </li>
                 ))}
               </ul>
@@ -571,7 +571,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── 7. Piani API ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-gray-50">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-[#0a0a0a]">
         <div className="max-w-4xl mx-auto text-center">
           <SectionLabel>Piani API</SectionLabel>
           <SectionHeading>Accesso API su misura</SectionHeading>
@@ -582,7 +582,7 @@ export default function ApiPage() {
             </SectionDescription>
           </div>
 
-          <div className="mt-12 bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
+          <div className="mt-12 bg-white/[0.04] border border-white/10 rounded-3xl shadow-black/40 shadow-sm overflow-hidden">
             <div className="bg-[#0d3d2a] px-6 sm:px-8 py-8 sm:py-10 text-white text-left">
               <p className="text-xs font-semibold text-green-400 uppercase tracking-widest mb-2">
                 Piano API
@@ -599,7 +599,7 @@ export default function ApiPage() {
               {planFeatures.map((f) => (
                 <li key={f} className="flex items-start gap-3">
                   <CheckIcon />
-                  <span className="text-sm text-gray-700">{f}</span>
+                  <span className="text-sm text-gray-200">{f}</span>
                 </li>
               ))}
             </ul>
@@ -613,7 +613,7 @@ export default function ApiPage() {
               </Link>
               <Link
                 to="/terms"
-                className="flex-1 text-center bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-semibold py-3.5 rounded-xl transition-colors text-sm"
+                className="flex-1 text-center bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 font-semibold py-3.5 rounded-xl transition-colors text-sm"
               >
                 Leggi la documentazione
               </Link>
@@ -633,7 +633,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── 8. Documentazione ── */}
-      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-white">
+      <section className="py-12 sm:py-24 px-4 sm:px-6 bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
@@ -674,16 +674,16 @@ export default function ApiPage() {
               {docTopics.map((topic, i) => (
                 <div
                   key={topic}
-                  className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 hover:border-green-200 hover:bg-green-50/40 transition-colors cursor-pointer group"
+                  className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl px-5 py-4 hover:border-green-500/30 hover:bg-green-500/10 transition-colors cursor-pointer group"
                 >
-                  <span className="w-7 h-7 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400 shrink-0 group-hover:border-green-200 group-hover:text-green-600 transition-colors">
+                  <span className="w-7 h-7 bg-white/[0.04] border border-white/10 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400 shrink-0 group-hover:border-green-500/30 group-hover:text-green-400 transition-colors">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                  <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
                     {topic}
                   </span>
                   <svg
-                    className="w-4 h-4 text-gray-300 ml-auto shrink-0 group-hover:text-green-500 transition-colors"
+                    className="w-4 h-4 text-gray-500 ml-auto shrink-0 group-hover:text-green-500 transition-colors"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={2}
@@ -703,7 +703,7 @@ export default function ApiPage() {
       </section>
 
       {/* ── Feature cards row ── */}
-      <section className="py-10 sm:py-16 px-4 sm:px-6 bg-gray-50 border-t border-gray-100">
+      <section className="py-10 sm:py-16 px-4 sm:px-6 bg-[#0a0a0a] border-t border-white/10">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard

@@ -167,22 +167,22 @@ export default function FeaturesPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
           Piattaforma completa
         </div>
-        <h1 className="text-3xl sm:text-5xl lg:text-[52px] font-bold leading-[1.1] mb-6 text-[#0d3d2a] tracking-tight">
+        <h1 className="text-3xl sm:text-5xl lg:text-[52px] font-bold leading-[1.1] mb-6 text-white tracking-tight">
           Funzionalita
         </h1>
-        <p className="text-base sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-base sm:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto">
           DR7 Trust e una piattaforma progettata per semplificare la gestione dei documenti e dei processi di firma digitale.
         </p>
       </section>
 
       {/* Features grid */}
-      <section className="bg-gray-50 py-12 sm:py-20">
+      <section className="bg-[#0a0a0a] py-12 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {features.map((feature) => (
               <div
                 key={feature.number}
-                className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md hover:shadow-green-600/5 hover:border-green-200 transition-all duration-200 flex flex-col gap-5"
+                className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 sm:p-7 shadow-sm shadow-black/40 hover:shadow-md hover:shadow-green-600/5 hover:border-green-200 transition-all duration-200 flex flex-col gap-5"
               >
                 {/* Card header */}
                 <div className="flex items-start gap-4">
@@ -192,17 +192,17 @@ export default function FeaturesPage() {
                     {feature.number}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-[17px] font-bold text-[#0d3d2a] leading-snug mb-1.5">
+                    <h2 className="text-[17px] font-bold text-white leading-snug mb-1.5">
                       {feature.title}
                     </h2>
-                    <p className="text-sm text-gray-500 leading-relaxed">
+                    <p className="text-sm text-gray-400 leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-gray-100" />
+                <div className="border-t border-white/10" />
 
                 {/* Bullet list */}
                 <ul className="flex flex-col gap-2.5">
@@ -225,7 +225,7 @@ export default function FeaturesPage() {
                           />
                         </svg>
                       </span>
-                      <span className="text-sm text-gray-600 leading-relaxed">{bullet}</span>
+                      <span className="text-sm text-gray-400 leading-relaxed">{bullet}</span>
                     </li>
                   ))}
                 </ul>
@@ -243,8 +243,8 @@ export default function FeaturesPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
               Soluzioni per ogni settore
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#0d3d2a] mb-4 tracking-tight">Casi d'uso</h2>
-            <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight">Casi d'uso</h2>
+            <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">
               DR7 Trust consente di digitalizzare i processi documentali e automatizzare la gestione delle firme all'interno delle aziende.
             </p>
           </div>
@@ -288,17 +288,17 @@ export default function FeaturesPage() {
                 color: 'bg-teal-600',
               },
             ].map(uc => (
-              <div key={uc.title} className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-7 hover:border-green-200 hover:shadow-lg hover:shadow-green-600/5 transition-all">
+              <div key={uc.title} className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 sm:p-7 hover:border-green-200 hover:shadow-lg hover:shadow-green-600/5 transition-all">
                 <div className={`w-10 h-10 rounded-xl ${uc.color} flex items-center justify-center mb-4`}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{uc.title}</h3>
+                <h3 className="text-lg font-bold text-white mb-1">{uc.title}</h3>
                 <p className="text-sm text-green-700 font-medium italic mb-4">{uc.tagline}</p>
                 <ul className="space-y-2">
                   {uc.bullets.map(b => (
-                    <li key={b} className="flex items-start gap-2 text-sm text-gray-600">
+                    <li key={b} className="flex items-start gap-2 text-sm text-gray-400">
                       <span className="text-green-600 mt-0.5 shrink-0">
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                       </span>

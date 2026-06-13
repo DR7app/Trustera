@@ -9,14 +9,14 @@ interface SecurityCardProps {
 
 function SecurityCard({ icon, title, children }: SecurityCardProps) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200 border-l-4 border-l-green-500">
+    <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 shadow-sm shadow-black/40 hover:shadow-md hover:shadow-black/40 transition-shadow duration-200 border-l-4 border-l-green-500">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400 shrink-0">
           {icon}
         </div>
-        <h2 className="text-[17px] font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-[17px] font-semibold text-white">{title}</h2>
       </div>
-      <div className="text-[15px] text-gray-600 leading-relaxed space-y-3">
+      <div className="text-[15px] text-gray-400 leading-relaxed space-y-3">
         {children}
       </div>
     </div>
@@ -45,18 +45,18 @@ export default function SecurityPage() {
   return (
     <SiteLayout>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-green-50/60 to-white border-b border-gray-100">
+      <section className="bg-gradient-to-b from-green-500/10 to-black border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
             </svg>
             Security & Compliance
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0d3d2a] leading-tight tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight mb-6">
             Security & Compliance
           </h1>
-          <p className="text-base sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto">
             La sicurezza dei documenti, dei dati e delle transazioni digitali rappresenta una
             priorita fondamentale per DR7 Trust.
           </p>
@@ -173,7 +173,7 @@ export default function SecurityPage() {
               <CheckItem>Token di autenticazione per le sessioni</CheckItem>
               <CheckItem>Endpoint protetti e accessibili solo tramite credenziali valide</CheckItem>
             </ul>
-            <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-4 py-3 text-[13px] text-amber-800 leading-snug">
+            <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 text-[13px] text-amber-300 leading-snug">
               Gli sviluppatori sono responsabili della protezione delle proprie credenziali API.
               Non condividere mai le chiavi di accesso.
             </div>
@@ -196,7 +196,7 @@ export default function SecurityPage() {
               <CheckItem>Sicurezza delle credenziali di accesso</CheckItem>
               <CheckItem>Monitoraggio delle attivita sospette</CheckItem>
             </ul>
-            <p className="mt-3 text-[14px] text-gray-500">
+            <p className="mt-3 text-[14px] text-gray-400">
               Ti consigliamo di utilizzare una password robusta e unica per il tuo account DR7 Trust
               e di non condividerla con nessuno.
             </p>
@@ -219,7 +219,7 @@ export default function SecurityPage() {
               <CheckItem>Conformita al Regolamento (UE) 2016/679 (GDPR)</CheckItem>
               <CheckItem>Rispetto della normativa nazionale applicabile</CheckItem>
             </ul>
-            <p className="mt-3 text-[14px] text-gray-500">
+            <p className="mt-3 text-[14px] text-gray-400">
               Per maggiori informazioni sul trattamento dei dati personali, consulta la nostra{' '}
               <Link
                 to="/privacy"
@@ -255,18 +255,18 @@ export default function SecurityPage() {
         </div>
 
         {/* Bottom CTA / trust note */}
-        <div className="mt-14 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 sm:p-8 text-center">
+        <div className="mt-14 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl p-6 sm:p-8 text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
               </svg>
             </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-white mb-2">
             Hai domande sulla sicurezza?
           </h3>
-          <p className="text-[15px] text-gray-500 mb-6 max-w-md mx-auto leading-relaxed">
+          <p className="text-[15px] text-gray-400 mb-6 max-w-md mx-auto leading-relaxed">
             Il nostro team e disponibile per rispondere a qualsiasi domanda relativa alla sicurezza
             e alla conformita della piattaforma DR7 Trust.
           </p>
