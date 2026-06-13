@@ -145,15 +145,15 @@ export default function ApiPage() {
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 bg-green-600/20 border border-green-500/30 text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 tracking-wider uppercase">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              Trustera API
+              DR7 Trust API
             </span>
 
             <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight tracking-tight mb-6">
-              Trustera API
+              DR7 Trust API
             </h1>
 
             <p className="text-lg sm:text-xl text-green-100/80 leading-relaxed mb-10 max-w-2xl">
-              Le API Trustera consentono di integrare facilmente la firma
+              Le API DR7 Trust consentono di integrare facilmente la firma
               digitale e la gestione dei documenti all&apos;interno di software,
               applicazioni e piattaforme aziendali.
             </p>
@@ -398,7 +398,7 @@ export default function ApiPage() {
 
           <div className="mt-10 bg-gray-50 border border-gray-100 rounded-2xl p-6 max-w-xl mx-auto text-center">
             <p className="text-sm text-gray-500 leading-relaxed">
-              Configura un endpoint HTTPS e Trustera inviera un payload JSON
+              Configura un endpoint HTTPS e DR7 Trust inviera un payload JSON
               firmato ogni volta che un evento viene generato. Nessun polling,
               nessun ritardo.
             </p>
@@ -623,7 +623,7 @@ export default function ApiPage() {
           <p className="mt-6 text-xs text-gray-400 break-words">
             Hai esigenze di volume elevate?{' '}
             <a
-              href="mailto:info@trustera.it"
+              href="mailto:info@dr7trust.it"
               className="text-green-600 hover:underline font-medium break-all"
             >
               Contattaci per un piano custom
@@ -723,7 +723,7 @@ export default function ApiPage() {
                 </svg>
               }
               title="Scalabile"
-              description="L'infrastruttura Trustera gestisce da poche firme al giorno a milioni di documenti mensili senza modifiche al tuo codice."
+              description="L'infrastruttura DR7 Trust gestisce da poche firme al giorno a milioni di documenti mensili senza modifiche al tuo codice."
             />
             <FeatureCard
               icon={

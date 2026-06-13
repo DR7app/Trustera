@@ -9,7 +9,7 @@ const supabase = createClient(
     process.env.DR7_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Trustera Supabase — secondary (copy signed docs + marketing consent)
+// DR7 Trust Supabase — secondary (copy signed docs + marketing consent)
 const supabaseTrustera = createClient(
     process.env.SUPABASE_URL || 'https://zkcvsewfqnukdkvcairk.supabase.co',
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -277,17 +277,17 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // ── Trustera Verified Seals with QR code on last page ──
+        // ── DR7 Trust Verified Seals with QR code on last page ──
         // FIRMA LOCATORE gets a seal too (Ilenia Campagnola), same format as guidatore
         {
             const verifyUrl = `https://dr7trust.com/verify/${currentHash}`
             const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', width: 300, margin: 1 })
             const qrImage = await pdfDoc.embedPng(qrPng)
 
-            // Embed Trustera logo
+            // Embed DR7 Trust logo
             let logoImage: any = null
             try {
-                const logoResp = await fetch('https://dr7trust.com/trustera-logo.png')
+                const logoResp = await fetch('https://dr7trust.com/dr7trust-logo.png')
                 if (logoResp.ok) {
                     logoImage = await pdfDoc.embedPng(new Uint8Array(await logoResp.arrayBuffer()))
                 }
@@ -332,7 +332,7 @@ export const handler: Handler = async (event) => {
                     sealPage.drawImage(logoImage, { x: locSealX + 4, y: locHeaderY - 1, width: hLogoW, height: hLogoH })
                     sealPage.drawText('Verified Seal', { x: locSealX + 4 + hLogoW + 2, y: locHeaderY + 1, size: 4.5, font, color: sealLightGray })
                 } else {
-                    sealPage.drawText('Trustera  Verified Seal', { x: locSealX + 4, y: locHeaderY + 1, size: 4.5, font: fontBold, color: sealGray })
+                    sealPage.drawText('DR7 Trust  Verified Seal', { x: locSealX + 4, y: locHeaderY + 1, size: 4.5, font: fontBold, color: sealGray })
                 }
                 const locInfoX = locSealX + 4
                 const locInfoY = locHeaderY - 9
@@ -412,7 +412,7 @@ export const handler: Handler = async (event) => {
                 const vsX = sealX + 4 + hLogoW + 2
                 sealPage.drawText('Verified Seal', { x: vsX, y: headerY + 1, size: 4.5, font, color: sealLightGray })
             } else {
-                sealPage.drawText('Trustera  Verified Seal', { x: sealX + 4, y: headerY + 1, size: 4.5, font: fontBold, color: sealGray })
+                sealPage.drawText('DR7 Trust  Verified Seal', { x: sealX + 4, y: headerY + 1, size: 4.5, font: fontBold, color: sealGray })
             }
 
             // Signer info
@@ -456,7 +456,7 @@ export const handler: Handler = async (event) => {
                 })
             }
 
-            console.log(`[signature-complete] Trustera verified seal placed at x=${sealX}, y=${sealYPos}`)
+            console.log(`[signature-complete] DR7 Trust verified seal placed at x=${sealX}, y=${sealYPos}`)
         }
 
         // Add signer full name on footer right of ALL pages (offset by signerIndex to avoid overlap)
@@ -481,7 +481,7 @@ export const handler: Handler = async (event) => {
             console.log(`[signature-complete] Footer name added on ${allPages.length} pages for: ${signerName} (index ${signerIndex})`)
         }
 
-        // No extra attestation page — the Trustera verified seal with QR code
+        // No extra attestation page — the DR7 Trust verified seal with QR code
         // on the contract's last page IS the attestation (same as /sign/ flow)
 
         // Serialize final PDF
@@ -679,14 +679,14 @@ export const handler: Handler = async (event) => {
                 }
             }
 
-            // Also send a copy to owner via Trustera's Green API
+            // Also send a copy to owner via DR7 Trust's Green API
             const TRUSTERA_INSTANCE = process.env.GREEN_API_INSTANCE_ID
             const TRUSTERA_TOKEN = process.env.GREEN_API_TOKEN
             const ownerPhone = process.env.TRUSTERA_OWNER_WHATSAPP || '393457905205'
             if (TRUSTERA_INSTANCE && TRUSTERA_TOKEN && TRUSTERA_INSTANCE !== GREEN_API_INSTANCE_ID) {
                 try {
-                    const trusteraUrl = `https://api.green-api.com/waInstance${TRUSTERA_INSTANCE}/sendFileByUrl/${TRUSTERA_TOKEN}`
-                    const ownerRes = await fetch(trusteraUrl, {
+                    const dr7trustUrl = `https://api.green-api.com/waInstance${TRUSTERA_INSTANCE}/sendFileByUrl/${TRUSTERA_TOKEN}`
+                    const ownerRes = await fetch(dr7trustUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -698,12 +698,12 @@ export const handler: Handler = async (event) => {
                     })
                     const ownerResult = await ownerRes.json()
                     if (ownerRes.ok && ownerResult.idMessage) {
-                        console.log('[signature-complete] Owner copy sent via Trustera WhatsApp:', ownerResult.idMessage)
+                        console.log('[signature-complete] Owner copy sent via DR7 Trust WhatsApp:', ownerResult.idMessage)
                     } else {
-                        console.warn('[signature-complete] Trustera owner copy failed:', ownerResult)
+                        console.warn('[signature-complete] DR7 Trust owner copy failed:', ownerResult)
                     }
                 } catch (ownerErr: any) {
-                    console.warn('[signature-complete] Trustera owner copy error:', ownerErr.message)
+                    console.warn('[signature-complete] DR7 Trust owner copy error:', ownerErr.message)
                 }
             }
         } else if (!allSignersDone) {
@@ -711,7 +711,7 @@ export const handler: Handler = async (event) => {
             console.log(`[signature-complete] ${signedCount}/${totalSigners} signed — waiting for remaining signers before sending PDF`)
         }
 
-        // Dual-write to Trustera Supabase — copy signed document + marketing consent
+        // Dual-write to DR7 Trust Supabase — copy signed document + marketing consent
         try {
             await supabaseTrustera.from('signed_documents_log').insert({
                 source: contract ? 'dr7_contract' : 'dr7_standalone',
@@ -730,9 +730,9 @@ export const handler: Handler = async (event) => {
                     contract_id: sigRequest.contract_id || null,
                 }
             })
-            console.log('[signature-complete] Signed doc copied to Trustera DB')
+            console.log('[signature-complete] Signed doc copied to DR7 Trust DB')
 
-            // Mirror marketing consent to Trustera
+            // Mirror marketing consent to DR7 Trust
             if (marketingConsent !== undefined && sigRequest.signer_email) {
                 const email = sigRequest.signer_email.toLowerCase()
                 const { data: existing } = await supabaseTrustera
@@ -762,7 +762,7 @@ export const handler: Handler = async (event) => {
                 }
             }
         } catch (syncErr: any) {
-            console.warn('[signature-complete] Trustera sync failed (non-blocking):', syncErr.message)
+            console.warn('[signature-complete] DR7 Trust sync failed (non-blocking):', syncErr.message)
         }
 
         // Auto-send to CARGOS via admin panel (only after ALL signers done)

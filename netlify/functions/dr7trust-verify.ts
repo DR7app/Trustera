@@ -23,7 +23,7 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Hash richiesto' }) }
     }
 
-    console.log('[trustera-verify] Looking up hash:', hash)
+    console.log('[dr7trust-verify] Looking up hash:', hash)
 
     // 1. Look up document by pdf_hash in trustera_documents
     const { data: docs, error: docError } = await supabase
@@ -37,11 +37,11 @@ export const handler: Handler = async (event) => {
     const doc = docs?.[0] || null
 
     if (docError) {
-      console.error('[trustera-verify] trustera_documents lookup error:', docError.message)
+      console.error('[dr7trust-verify] trustera_documents lookup error:', docError.message)
     }
 
     if (doc) {
-      console.log('[trustera-verify] Found in trustera_documents:', doc.id)
+      console.log('[dr7trust-verify] Found in trustera_documents:', doc.id)
 
       // Fetch owner name
       let senderName = ''
@@ -142,7 +142,7 @@ export const handler: Handler = async (event) => {
     }
 
     // 2. Fallback: look up by original_pdf_hash in signed_documents_log
-    console.log('[trustera-verify] Not found in trustera_documents, trying signed_documents_log')
+    console.log('[dr7trust-verify] Not found in trustera_documents, trying signed_documents_log')
     const { data: logEntries, error: logError } = await supabase
       .from('signed_documents_log')
       .select('document_name, signer_name, signer_email, signed_at, signer_ip, original_pdf_hash, metadata, source')
@@ -150,16 +150,16 @@ export const handler: Handler = async (event) => {
       .limit(1)
 
     if (logError) {
-      console.error('[trustera-verify] signed_documents_log lookup error:', logError.message)
+      console.error('[dr7trust-verify] signed_documents_log lookup error:', logError.message)
     }
 
     const logEntry = logEntries?.[0]
     if (!logEntry) {
-      console.log('[trustera-verify] Hash not found anywhere:', hash)
+      console.log('[dr7trust-verify] Hash not found anywhere:', hash)
       return { statusCode: 404, body: JSON.stringify({ error: 'Documento non trovato o non ancora firmato' }) }
     }
 
-    console.log('[trustera-verify] Found in signed_documents_log:', logEntry.document_name)
+    console.log('[dr7trust-verify] Found in signed_documents_log:', logEntry.document_name)
 
     const signerList: any[] = []
     let auditTrail: any[] = []
@@ -260,7 +260,7 @@ export const handler: Handler = async (event) => {
       })
     }
   } catch (error: any) {
-    console.error('[trustera-verify] Error:', error)
+    console.error('[dr7trust-verify] Error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

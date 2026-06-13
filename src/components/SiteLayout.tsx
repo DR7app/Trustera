@@ -25,7 +25,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <header className="border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-50">
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 max-w-6xl mx-auto">
           <Link to="/" className="flex items-center shrink-0">
-            <img src="/trustera-logo.jpeg" alt="Trustera" className="h-10 sm:h-14 w-auto" />
+            <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-10 sm:h-14 w-auto" />
           </Link>
 
           {/* Desktop nav */}
@@ -110,7 +110,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6 sm:gap-8">
             <div>
-              <img src="/trustera-logo.jpeg" alt="Trustera" className="h-10 w-auto mb-3" />
+              <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-10 w-auto mb-3" />
               <p className="text-sm text-gray-400 max-w-xs">Infrastructure for Digital Trust</p>
             </div>
             <div className="flex flex-wrap gap-x-8 gap-y-2">
@@ -126,7 +126,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-gray-200 text-xs text-gray-300 text-center sm:text-left">
-            Trustera - Infrastructure for Digital Trust
+            DR7 Trust - Infrastructure for Digital Trust
           </div>
         </div>
       </footer>

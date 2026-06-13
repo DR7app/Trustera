@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Token e OTP richiesti' }) }
     }
 
-    console.log('[trustera-sign-verify] Looking up token:', token.substring(0, 8) + '...')
+    console.log('[dr7trust-sign-verify] Looking up token:', token.substring(0, 8) + '...')
 
     // --- Try trustera_document_signers first (new multi-signer flow) ---
     const { data: signerRow, error: signerError } = await supabase
@@ -40,24 +40,24 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (signerError) {
-      console.error('[trustera-sign-verify] Signer lookup error:', signerError.message, signerError.code)
+      console.error('[dr7trust-sign-verify] Signer lookup error:', signerError.message, signerError.code)
     }
 
     if (signerRow) {
-      console.log('[trustera-sign-verify] Found signer row:', signerRow.id, 'email:', signerRow.signer_email, 'otp_code:', signerRow.otp_code ? 'SET' : 'NULL', 'otp_expires_at:', signerRow.otp_expires_at)
+      console.log('[dr7trust-sign-verify] Found signer row:', signerRow.id, 'email:', signerRow.signer_email, 'otp_code:', signerRow.otp_code ? 'SET' : 'NULL', 'otp_expires_at:', signerRow.otp_expires_at)
       const ip = event.headers['x-forwarded-for']?.split(',')[0].trim() || event.headers['client-ip'] || ''
       const ua = event.headers['user-agent'] || ''
 
       // Check OTP expiration
       if (signerRow.otp_expires_at && new Date(signerRow.otp_expires_at) < new Date()) {
-        console.log('[trustera-sign-verify] OTP expired for signer:', signerRow.id)
+        console.log('[dr7trust-sign-verify] OTP expired for signer:', signerRow.id)
         await logAudit(signerRow.document_id, 'otp_expired', signerRow.signer_email, ip, ua)
         return { statusCode: 400, body: JSON.stringify({ error: 'Codice scaduto. Richiedi un nuovo codice.' }) }
       }
 
       // Verify OTP
       if (signerRow.otp_code !== otp) {
-        console.log('[trustera-sign-verify] OTP mismatch for signer:', signerRow.id, 'expected:', signerRow.otp_code ? 'exists' : 'NULL', 'got:', otp)
+        console.log('[dr7trust-sign-verify] OTP mismatch for signer:', signerRow.id, 'expected:', signerRow.otp_code ? 'exists' : 'NULL', 'got:', otp)
         await logAudit(signerRow.document_id, 'otp_failed', signerRow.signer_email, ip, ua)
         return { statusCode: 400, body: JSON.stringify({ error: 'Codice non valido' }) }
       }
@@ -69,12 +69,12 @@ export const handler: Handler = async (event) => {
         .eq('id', signerRow.id)
 
       if (updateError) {
-        console.error('[trustera-sign-verify] Update failed (signers):', updateError.message, updateError.code, updateError.details)
+        console.error('[dr7trust-sign-verify] Update failed (signers):', updateError.message, updateError.code, updateError.details)
         return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel salvataggio della verifica' }) }
       }
 
       await logAudit(signerRow.document_id, 'otp_verified', signerRow.signer_email, ip, ua, { verified_at: new Date().toISOString() })
-      console.log('[trustera-sign-verify] OTP verified for signer:', signerRow.id)
+      console.log('[dr7trust-sign-verify] OTP verified for signer:', signerRow.id)
       return { statusCode: 200, body: JSON.stringify({ success: true }) }
     }
 
@@ -86,26 +86,26 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (docError) {
-      console.error('[trustera-sign-verify] Document lookup error:', docError.message, docError.code, docError.details)
+      console.error('[dr7trust-sign-verify] Document lookup error:', docError.message, docError.code, docError.details)
       return { statusCode: 404, body: JSON.stringify({ error: 'Documento non trovato', debug: docError.message }) }
     }
 
     if (!doc) {
-      console.error('[trustera-sign-verify] No document or signer found for token')
+      console.error('[dr7trust-sign-verify] No document or signer found for token')
       return { statusCode: 404, body: JSON.stringify({ error: 'Documento non trovato' }) }
     }
 
-    console.log('[trustera-sign-verify] Found doc (legacy):', doc.id, 'otp_code:', doc.otp_code ? 'SET' : 'NULL', 'otp_expires_at:', doc.otp_expires_at)
+    console.log('[dr7trust-sign-verify] Found doc (legacy):', doc.id, 'otp_code:', doc.otp_code ? 'SET' : 'NULL', 'otp_expires_at:', doc.otp_expires_at)
 
     // Check OTP expiration
     if (doc.otp_expires_at && new Date(doc.otp_expires_at) < new Date()) {
-      console.log('[trustera-sign-verify] OTP expired for doc:', doc.id)
+      console.log('[dr7trust-sign-verify] OTP expired for doc:', doc.id)
       return { statusCode: 400, body: JSON.stringify({ error: 'Codice scaduto. Richiedi un nuovo codice.' }) }
     }
 
     // Verify OTP
     if (doc.otp_code !== otp) {
-      console.log('[trustera-sign-verify] OTP mismatch for doc:', doc.id, 'expected:', doc.otp_code ? 'exists' : 'NULL', 'got:', otp)
+      console.log('[dr7trust-sign-verify] OTP mismatch for doc:', doc.id, 'expected:', doc.otp_code ? 'exists' : 'NULL', 'got:', otp)
       return { statusCode: 400, body: JSON.stringify({ error: 'Codice non valido' }) }
     }
 
@@ -116,14 +116,14 @@ export const handler: Handler = async (event) => {
       .eq('id', doc.id)
 
     if (updateError) {
-      console.error('[trustera-sign-verify] Update failed (documents):', updateError.message, updateError.code, updateError.details)
+      console.error('[dr7trust-sign-verify] Update failed (documents):', updateError.message, updateError.code, updateError.details)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel salvataggio della verifica' }) }
     }
 
-    console.log('[trustera-sign-verify] OTP verified for doc (legacy):', doc.id)
+    console.log('[dr7trust-sign-verify] OTP verified for doc (legacy):', doc.id)
     return { statusCode: 200, body: JSON.stringify({ success: true }) }
   } catch (error: any) {
-    console.error('[trustera-sign-verify] Unexpected error:', error)
+    console.error('[dr7trust-sign-verify] Unexpected error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore nella verifica' })

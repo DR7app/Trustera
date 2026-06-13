@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/">
-            <img src="/trustera-logo.jpeg" alt="Trustera" className="h-12 mx-auto mb-3" />
+            <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-12 mx-auto mb-3" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-800">Nuova Password</h1>
           <p className="text-gray-500 text-sm mt-1">Inserisci la tua nuova password</p>

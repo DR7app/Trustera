@@ -619,7 +619,7 @@ export default function FieldPlacementEditor({ pdfUrl, signers, onComplete, onCa
                             </span>
                             <span className="text-[7px] text-gray-400 flex items-center gap-0.5 mt-0.5">
                               <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                              Certificato da <img src="/trustera-logo.jpeg" alt="Trustera" className="inline h-[8px] ml-0.5" />
+                              Certificato da <img src="/dr7trust-logo.png" alt="DR7 Trust" className="inline h-[8px] ml-0.5" />
                             </span>
                           </div>
                         ) : (
@@ -726,7 +726,7 @@ export default function FieldPlacementEditor({ pdfUrl, signers, onComplete, onCa
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                             </svg>
-                            Certificato da <img src="/trustera-logo.jpeg" alt="Trustera" className="inline h-[10px] ml-0.5" />
+                            Certificato da <img src="/dr7trust-logo.png" alt="DR7 Trust" className="inline h-[10px] ml-0.5" />
                           </p>
                         </div>
                       </div>

@@ -7,7 +7,7 @@ const supabaseDR7 = createClient(
     process.env.DR7_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Trustera Supabase — to verify the user is authenticated
+// DR7 Trust Supabase — to verify the user is authenticated
 const supabaseTrustera = createClient(
     process.env.SUPABASE_URL || 'https://zkcvsewfqnukdkvcairk.supabase.co',
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -25,7 +25,7 @@ export const handler: Handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Email e token richiesti' }) }
         }
 
-        // Verify the user is actually authenticated on Trustera
+        // Verify the user is actually authenticated on DR7 Trust
         const { data: { user }, error: authError } = await supabaseTrustera.auth.getUser(accessToken)
         if (authError || !user || user.email?.toLowerCase() !== email.toLowerCase()) {
             return { statusCode: 401, body: JSON.stringify({ error: 'Non autorizzato' }) }
@@ -40,7 +40,7 @@ export const handler: Handler = async (event) => {
             .order('signed_at', { ascending: false })
 
         if (srError) {
-            console.error('[trustera-get-dr7-documents] Error fetching signature_requests:', srError.message)
+            console.error('[dr7trust-get-dr7-documents] Error fetching signature_requests:', srError.message)
             return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel recupero documenti' }) }
         }
 
@@ -61,15 +61,15 @@ export const handler: Handler = async (event) => {
             }
         }
 
-        // Also fetch from trustera_documents on DR7 (old Trustera docs before migration)
-        const { data: oldTrusteraDocs } = await supabaseDR7
+        // Also fetch from trustera_documents on DR7 (old DR7 Trust docs before migration)
+        const { data: oldDr7trustDocs } = await supabaseDR7
             .from('trustera_documents')
             .select('id, name, status, signer_name, signer_email, signed_pdf_url, signed_at, created_at, pdf_url, owner_id')
             .or(`signer_email.ilike.${email},owner_id.not.is.null`)
             .order('created_at', { ascending: false })
 
-        // Filter old trustera docs to ones related to this user
-        const relevantOldDocs = (oldTrusteraDocs || []).filter(d =>
+        // Filter old dr7trust docs to ones related to this user
+        const relevantOldDocs = (oldDr7trustDocs || []).filter(d =>
             d.signer_email?.toLowerCase() === email.toLowerCase()
         )
 
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
             body: JSON.stringify({ documents })
         }
     } catch (error: any) {
-        console.error('[trustera-get-dr7-documents] Error:', error)
+        console.error('[dr7trust-get-dr7-documents] Error:', error)
         return {
             statusCode: 500,
             body: JSON.stringify({ error: error.message || 'Errore interno' })

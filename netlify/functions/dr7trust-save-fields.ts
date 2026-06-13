@@ -67,7 +67,7 @@ export const handler: Handler = async (event) => {
       .insert(rows)
 
     if (insertError) {
-      console.error('[trustera-save-fields] Insert error:', insertError.message)
+      console.error('[dr7trust-save-fields] Insert error:', insertError.message)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel salvataggio dei campi' }) }
     }
 
@@ -76,7 +76,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ success: true, fieldCount: rows.length })
     }
   } catch (error: any) {
-    console.error('[trustera-save-fields] Error:', error)
+    console.error('[dr7trust-save-fields] Error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

@@ -10,7 +10,7 @@ export default function LandingPage() {
           Ancora a stampare, firmare e scannerizzare documenti?
         </h1>
         <p className="text-lg sm:text-2xl text-gray-600 mb-4 leading-relaxed">
-          Con <strong className="text-green-600">Trustera</strong> firmi e invii tutto <strong className="text-gray-900">in meno di un minuto.</strong>
+          Con <strong className="text-green-600">DR7 Trust</strong> firmi e invii tutto <strong className="text-gray-900">in meno di un minuto.</strong>
         </p>
         <p className="text-sm sm:text-lg text-gray-500 mb-8 sm:mb-10 leading-relaxed max-w-2xl mx-auto">
           Carica un PDF, scegli a chi inviarlo e il firmatario riceve il link via <strong className="text-gray-700">email e WhatsApp</strong>.
@@ -119,7 +119,7 @@ export default function LandingPage() {
       <section className="bg-[#0d3d2a] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">30 giorni gratis. Nessun rischio.</h2>
-          <p className="text-green-200/70 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed">Prova Trustera gratuitamente e valuta la piattaforma in piena liberta. Nessuna penale, nessun vincolo.</p>
+          <p className="text-green-200/70 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed">Prova DR7 Trust gratuitamente e valuta la piattaforma in piena liberta. Nessuna penale, nessun vincolo.</p>
           <Link to="/login" className="inline-block w-full sm:w-auto bg-white text-[#0d3d2a] font-bold py-3.5 px-8 sm:px-10 rounded-xl text-lg transition-all hover:bg-green-50 active:scale-[0.98]">
             Inizia Gratis
           </Link>

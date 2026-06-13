@@ -58,7 +58,7 @@ export default function SecurityPage() {
           </h1>
           <p className="text-base sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
             La sicurezza dei documenti, dei dati e delle transazioni digitali rappresenta una
-            priorita fondamentale per Trustera.
+            priorita fondamentale per DR7 Trust.
           </p>
         </div>
       </section>
@@ -99,7 +99,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              Ogni documento firmato tramite Trustera e protetto da un sistema di tracciabilita
+              Ogni documento firmato tramite DR7 Trust e protetto da un sistema di tracciabilita
               completo e verificabile.
             </p>
             <ul className="space-y-2 mt-2">
@@ -144,7 +144,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              La piattaforma Trustera e costruita su un'infrastruttura cloud ad alta affidabilita,
+              La piattaforma DR7 Trust e costruita su un'infrastruttura cloud ad alta affidabilita,
               progettata per garantire continuita operativa e protezione dei dati.
             </p>
             <ul className="space-y-2 mt-2">
@@ -165,7 +165,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              L'accesso alle API Trustera e protetto tramite meccanismi di autenticazione standard.
+              L'accesso alle API DR7 Trust e protetto tramite meccanismi di autenticazione standard.
               Gli sviluppatori sono responsabili della protezione delle proprie credenziali.
             </p>
             <ul className="space-y-2 mt-2">
@@ -189,7 +189,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              Trustera adotta misure per proteggere gli account utente e segnalare comportamenti
+              DR7 Trust adotta misure per proteggere gli account utente e segnalare comportamenti
               anomali.
             </p>
             <ul className="space-y-2 mt-2">
@@ -197,7 +197,7 @@ export default function SecurityPage() {
               <CheckItem>Monitoraggio delle attivita sospette</CheckItem>
             </ul>
             <p className="mt-3 text-[14px] text-gray-500">
-              Ti consigliamo di utilizzare una password robusta e unica per il tuo account Trustera
+              Ti consigliamo di utilizzare una password robusta e unica per il tuo account DR7 Trust
               e di non condividerla con nessuno.
             </p>
           </SecurityCard>
@@ -212,7 +212,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              Trustera opera nel rispetto della normativa europea e nazionale in materia di
+              DR7 Trust opera nel rispetto della normativa europea e nazionale in materia di
               protezione dei dati personali e firma digitale.
             </p>
             <ul className="space-y-2 mt-2">
@@ -241,7 +241,7 @@ export default function SecurityPage() {
             }
           >
             <p>
-              La sicurezza e un processo continuo. Trustera monitora costantemente la piattaforma
+              La sicurezza e un processo continuo. DR7 Trust monitora costantemente la piattaforma
               per identificare e affrontare nuove sfide.
             </p>
             <ul className="space-y-2 mt-2">
@@ -268,10 +268,10 @@ export default function SecurityPage() {
           </h3>
           <p className="text-[15px] text-gray-500 mb-6 max-w-md mx-auto leading-relaxed">
             Il nostro team e disponibile per rispondere a qualsiasi domanda relativa alla sicurezza
-            e alla conformita della piattaforma Trustera.
+            e alla conformita della piattaforma DR7 Trust.
           </p>
           <a
-            href="mailto:info@trustera.it"
+            href="mailto:info@dr7trust.it"
             className="inline-flex w-full sm:w-auto justify-center items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-6 py-3 rounded-lg transition-colors shadow-md shadow-green-600/20"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">

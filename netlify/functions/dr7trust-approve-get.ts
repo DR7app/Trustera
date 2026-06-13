@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
       .eq('approval_status', 'awaiting_approval')
 
     if (queryError) {
-      console.error('[trustera-approve-get] Query error:', queryError.message)
+      console.error('[dr7trust-approve-get] Query error:', queryError.message)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel recupero del documento' }) }
     }
 
@@ -80,7 +80,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Get sender name
-    let senderName = 'Un utente Trustera'
+    let senderName = 'Un utente DR7 Trust'
     if (matchedDoc.owner_id) {
       const { data: { user: ownerUser } } = await supabase.auth.admin.getUserById(matchedDoc.owner_id)
       if (ownerUser?.user_metadata?.full_name) {
@@ -107,7 +107,7 @@ export const handler: Handler = async (event) => {
       })
     }
   } catch (error: any) {
-    console.error('[trustera-approve-get] Unexpected error:', error)
+    console.error('[dr7trust-approve-get] Unexpected error:', error)
     return { statusCode: 500, body: JSON.stringify({ error: error.message || 'Errore interno' }) }
   }
 }

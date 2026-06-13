@@ -62,7 +62,7 @@ const features = [
     number: '05',
     title: 'Verifica dei documenti',
     description:
-      'Chiunque puo verificare in modo indipendente l\'autenticita e l\'integrita di un documento firmato tramite Trustera, senza necessita di account.',
+      'Chiunque puo verificare in modo indipendente l\'autenticita e l\'integrita di un documento firmato tramite DR7 Trust, senza necessita di account.',
     bullets: [
       'Verifica l\'integrita tramite hash SHA-256',
       'Controlla la validita del processo di firma',
@@ -76,7 +76,7 @@ const features = [
     number: '06',
     title: 'Integrazione tramite API',
     description:
-      'Connetti Trustera ai tuoi sistemi esistenti. Le API REST permettono di automatizzare ogni aspetto del ciclo di vita di un documento.',
+      'Connetti DR7 Trust ai tuoi sistemi esistenti. Le API REST permettono di automatizzare ogni aspetto del ciclo di vita di un documento.',
     bullets: [
       'Crea documenti programmaticamente',
       'Invia richieste di firma via API',
@@ -104,7 +104,7 @@ const features = [
     number: '08',
     title: 'Automazioni e webhook',
     description:
-      'Collega Trustera ai tuoi strumenti e avvia automaticamente azioni in risposta agli eventi del ciclo di vita dei documenti.',
+      'Collega DR7 Trust ai tuoi strumenti e avvia automaticamente azioni in risposta agli eventi del ciclo di vita dei documenti.',
     bullets: [
       'Aggiorna sistemi esterni alla firma',
       'Attiva workflow automatici su ogni evento',
@@ -146,7 +146,7 @@ const features = [
     number: '11',
     title: 'Sicurezza della piattaforma',
     description:
-      'Trustera e progettata con la sicurezza al centro. Ogni connessione, ogni accesso e ogni documento sono protetti da standard enterprise.',
+      'DR7 Trust e progettata con la sicurezza al centro. Ogni connessione, ogni accesso e ogni documento sono protetti da standard enterprise.',
     bullets: [
       'Connessioni cifrate TLS end-to-end',
       'Autenticazione sicura con OTP',
@@ -171,7 +171,7 @@ export default function FeaturesPage() {
           Funzionalita
         </h1>
         <p className="text-base sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
-          Trustera e una piattaforma progettata per semplificare la gestione dei documenti e dei processi di firma digitale.
+          DR7 Trust e una piattaforma progettata per semplificare la gestione dei documenti e dei processi di firma digitale.
         </p>
       </section>
 
@@ -245,7 +245,7 @@ export default function FeaturesPage() {
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#0d3d2a] mb-4 tracking-tight">Casi d'uso</h2>
             <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
-              Trustera consente di digitalizzare i processi documentali e automatizzare la gestione delle firme all'interno delle aziende.
+              DR7 Trust consente di digitalizzare i processi documentali e automatizzare la gestione delle firme all'interno delle aziende.
             </p>
           </div>
 

@@ -20,9 +20,9 @@ async function logAudit(documentId: string, action: string, email?: string, ip?:
 }
 
 async function createSignedStorageUrl(rawUrl: string): Promise<string> {
-  const match = rawUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/trustera\/(.+)/)
+  const match = rawUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/dr7trust\/(.+)/)
   if (!match) return rawUrl
-  const { data } = await supabase.storage.from('trustera').createSignedUrl(match[1], 3600)
+  const { data } = await supabase.storage.from('dr7trust').createSignedUrl(match[1], 3600)
   return data?.signedUrl || rawUrl
 }
 
@@ -45,7 +45,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (signerError) {
-      console.error('[trustera-sign-get] Signer lookup error:', signerError.message)
+      console.error('[dr7trust-sign-get] Signer lookup error:', signerError.message)
     }
 
     if (signerRow) {
@@ -125,7 +125,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (docError) {
-      console.error('[trustera-sign-get] Document lookup error:', docError.message)
+      console.error('[dr7trust-sign-get] Document lookup error:', docError.message)
     }
 
     if (!doc) {
@@ -161,7 +161,7 @@ export const handler: Handler = async (event) => {
 
     return { statusCode: 200, body: JSON.stringify(response) }
   } catch (error: any) {
-    console.error('[trustera-sign-get] Error:', error)
+    console.error('[dr7trust-sign-get] Error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

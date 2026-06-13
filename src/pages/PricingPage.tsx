@@ -304,7 +304,7 @@ export default function PricingPage() {
               </p>
             </div>
             <a
-              href="mailto:info@trustera.it"
+              href="mailto:info@dr7trust.it"
               className="inline-flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 rounded-xl border border-green-600 px-6 py-3.5 text-sm font-bold text-green-700 hover:bg-green-50 transition-colors"
             >
               Contattaci
@@ -353,7 +353,7 @@ export default function PricingPage() {
                 Nessun rischio.
               </h2>
               <p className="text-green-200 text-sm leading-relaxed">
-                Prova Trustera senza impegno. Inizia oggi, aggiorna o disdici
+                Prova DR7 Trust senza impegno. Inizia oggi, aggiorna o disdici
                 quando vuoi.
               </p>
               <Link
@@ -398,10 +398,10 @@ export default function PricingPage() {
         <p className="text-center text-gray-400 text-sm mb-10 break-words">
           Non trovi la risposta? Scrivici a{' '}
           <a
-            href="mailto:info@trustera.it"
+            href="mailto:info@dr7trust.it"
             className="text-green-600 hover:underline break-all"
           >
-            info@trustera.it
+            info@dr7trust.it
           </a>
         </p>
 

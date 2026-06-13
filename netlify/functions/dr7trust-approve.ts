@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
-import { processSendSigners } from './trustera-send-signing'
+import { processSendSigners } from './dr7trust-send-signing'
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://zkcvsewfqnukdkvcairk.supabase.co',
@@ -38,7 +38,7 @@ function buildRejectionNotificationHtml(
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     <p style="margin:0 0 12px;">Ciao <strong>${ownerName}</strong>,</p>
@@ -57,7 +57,7 @@ function buildRejectionNotificationHtml(
   <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
-      Trustera - Infrastructure for Digital Trust<br/>
+      DR7 Trust - Infrastructure for Digital Trust<br/>
       <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
       .eq('approval_status', 'awaiting_approval')
 
     if (queryError) {
-      console.error('[trustera-approve] Query error:', queryError.message)
+      console.error('[dr7trust-approve] Query error:', queryError.message)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel recupero del documento' }) }
     }
 
@@ -157,7 +157,7 @@ export const handler: Handler = async (event) => {
         .eq('id', matchedDoc.id)
 
       if (rejectError) {
-        console.error('[trustera-approve] Reject update failed:', rejectError.message)
+        console.error('[dr7trust-approve] Reject update failed:', rejectError.message)
         throw rejectError
       }
 
@@ -168,21 +168,21 @@ export const handler: Handler = async (event) => {
           if (ownerUser?.email) {
             const ownerName = ownerUser.user_metadata?.full_name || ownerUser.email
             await resend.emails.send({
-              from: 'Trustera <info@dr7trust.com>',
+              from: 'DR7 Trust <info@dr7trust.com>',
               replyTo: 'info@dr7trust.com',
               to: ownerUser.email,
               subject: `Documento rifiutato: ${matchedDoc.name}`,
-              text: `Ciao ${ownerName},\n\n${matchedApprover.name} ha rifiutato l'invio del documento "${matchedDoc.name}".${reason ? `\n\nMotivo: ${reason}` : ''}\n\nPuoi modificare il documento e riprovare dalla tua dashboard.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
+              text: `Ciao ${ownerName},\n\n${matchedApprover.name} ha rifiutato l'invio del documento "${matchedDoc.name}".${reason ? `\n\nMotivo: ${reason}` : ''}\n\nPuoi modificare il documento e riprovare dalla tua dashboard.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
               html: buildRejectionNotificationHtml(ownerName, matchedApprover.name, matchedDoc.name, reason || '')
             })
           }
         } catch (emailErr: any) {
-          console.warn('[trustera-approve] Owner rejection email failed:', emailErr.message)
+          console.warn('[dr7trust-approve] Owner rejection email failed:', emailErr.message)
         }
       }
 
       await logAudit(matchedDoc.id, 'approval_rejected', matchedApprover.email, undefined, undefined, { approver_name: matchedApprover.name, reason: reason || null })
-      console.log('[trustera-approve] Document rejected by', matchedApprover.email, 'doc:', matchedDoc.id)
+      console.log('[dr7trust-approve] Document rejected by', matchedApprover.email, 'doc:', matchedDoc.id)
 
       return {
         statusCode: 200,
@@ -202,7 +202,7 @@ export const handler: Handler = async (event) => {
       .eq('id', matchedDoc.id)
 
     if (approveUpdateError) {
-      console.error('[trustera-approve] Approve update failed:', approveUpdateError.message)
+      console.error('[dr7trust-approve] Approve update failed:', approveUpdateError.message)
       throw approveUpdateError
     }
 
@@ -211,7 +211,7 @@ export const handler: Handler = async (event) => {
 
     if (!allApproved) {
       await logAudit(matchedDoc.id, 'approval_approved', matchedApprover.email, undefined, undefined, { approver_name: matchedApprover.name, all_approved: false })
-      console.log('[trustera-approve] Waiting for more approvals, doc:', matchedDoc.id)
+      console.log('[dr7trust-approve] Waiting for more approvals, doc:', matchedDoc.id)
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -228,12 +228,12 @@ export const handler: Handler = async (event) => {
     const draftSigners: any[] = Array.isArray(matchedDoc.draft_signers) ? matchedDoc.draft_signers : []
 
     if (draftSigners.length === 0) {
-      console.error('[trustera-approve] No draft_signers found for doc:', matchedDoc.id)
+      console.error('[dr7trust-approve] No draft_signers found for doc:', matchedDoc.id)
       return { statusCode: 500, body: JSON.stringify({ error: 'Nessun firmatario trovato nel documento' }) }
     }
 
     // Get the sender name
-    let senderName = 'Un utente Trustera'
+    let senderName = 'Un utente DR7 Trust'
     if (matchedDoc.owner_id) {
       const { data: { user: ownerUser } } = await supabase.auth.admin.getUserById(matchedDoc.owner_id)
       if (ownerUser?.user_metadata?.full_name) {
@@ -267,12 +267,12 @@ export const handler: Handler = async (event) => {
       .eq('id', matchedDoc.id)
 
     if (finalUpdateError) {
-      console.error('[trustera-approve] Final document update failed:', finalUpdateError.message)
+      console.error('[dr7trust-approve] Final document update failed:', finalUpdateError.message)
       throw finalUpdateError
     }
 
     await logAudit(matchedDoc.id, 'approval_approved', matchedApprover.email, undefined, undefined, { approver_name: matchedApprover.name, all_approved: true })
-    console.log('[trustera-approve] All approvers approved, signing links sent for doc:', matchedDoc.id)
+    console.log('[dr7trust-approve] All approvers approved, signing links sent for doc:', matchedDoc.id)
 
     return {
       statusCode: 200,
@@ -285,7 +285,7 @@ export const handler: Handler = async (event) => {
       })
     }
   } catch (error: any) {
-    console.error('[trustera-approve] Unexpected error:', error)
+    console.error('[dr7trust-approve] Unexpected error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

@@ -61,7 +61,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera è una piattaforma digitale dedicata alla gestione documentale, alla raccolta di firme
+            DR7 Trust è una piattaforma digitale dedicata alla gestione documentale, alla raccolta di firme
             elettroniche, all'automazione dei flussi di approvazione e, ove previsto, all'integrazione di tali
             funzionalità all'interno di software di terze parti tramite interfacce applicative e API.
           </p>
@@ -90,7 +90,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Per utilizzare i servizi Trustera, l'utente deve creare un account fornendo dati completi, corretti,
+            Per utilizzare i servizi DR7 Trust, l'utente deve creare un account fornendo dati completi, corretti,
             aggiornati e veritieri.
           </p>
           <p>L'utente è responsabile:</p>
@@ -101,11 +101,11 @@ function TerminiContent() {
             <BulletItem>dell'uso conforme della piattaforma rispetto ai presenti Termini</BulletItem>
           </ul>
           <p>
-            L'utente si impegna a informare tempestivamente Trustera in caso di uso non autorizzato del proprio
+            L'utente si impegna a informare tempestivamente DR7 Trust in caso di uso non autorizzato del proprio
             account, perdita delle credenziali o violazione della sicurezza.
           </p>
           <SectionNote>
-            Trustera si riserva il diritto di sospendere, limitare o chiudere account registrati con dati falsi,
+            DR7 Trust si riserva il diritto di sospendere, limitare o chiudere account registrati con dati falsi,
             incompleti, ingannevoli o utilizzati in violazione dei presenti Termini.
           </SectionNote>
         </div>
@@ -119,7 +119,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera può mettere a disposizione dell'utente un periodo di prova gratuito della durata di 30
+            DR7 Trust può mettere a disposizione dell'utente un periodo di prova gratuito della durata di 30
             giorni, finalizzato a consentire la valutazione delle funzionalità della piattaforma.
           </p>
           <p>
@@ -132,7 +132,7 @@ function TerminiContent() {
             attivare un piano a pagamento o non proseguire con il servizio.
           </p>
           <SectionNote>
-            In caso di mancata attivazione di un piano a pagamento, Trustera può limitare l'accesso
+            In caso di mancata attivazione di un piano a pagamento, DR7 Trust può limitare l'accesso
             all'account, ridurre le funzionalità disponibili, sospendere o disattivare il servizio, conservare
             o eliminare i dati secondo quanto previsto nei presenti Termini e nella Privacy Policy.
           </SectionNote>
@@ -161,7 +161,7 @@ function TerminiContent() {
           </p>
           <SubHeading>4.3 Prezzi</SubHeading>
           <p>
-            Tutti i prezzi si intendono al netto dell'IVA applicabile. Trustera si riserva il diritto di
+            Tutti i prezzi si intendono al netto dell'IVA applicabile. DR7 Trust si riserva il diritto di
             aggiornare i listini prezzi, comunicando le variazioni con congruo anticipo attraverso la
             piattaforma o via email. Le variazioni di prezzo non si applicano ai periodi già fatturati.
           </p>
@@ -179,7 +179,7 @@ function TerminiContent() {
             L'utente si impegna a corrispondere i corrispettivi dovuti per il piano sottoscritto secondo
             le modalità e le scadenze indicate al momento dell'acquisto.
           </p>
-          <p>In caso di mancato o ritardato pagamento, Trustera si riserva il diritto di:</p>
+          <p>In caso di mancato o ritardato pagamento, DR7 Trust si riserva il diritto di:</p>
           <ul className="space-y-1.5">
             <BulletItem>sospendere temporaneamente l'accesso al servizio</BulletItem>
             <BulletItem>limitare le funzionalità disponibili fino alla regolarizzazione</BulletItem>
@@ -218,11 +218,11 @@ function TerminiContent() {
           <p>
             I piani API annuali sono vincolanti per l'intera durata contrattuale. Non è possibile recedere
             anticipatamente né ottenere rimborsi parziali per i volumi non utilizzati, salvo accordi
-            specifici scritti con Trustera.
+            specifici scritti con DR7 Trust.
           </p>
           <SectionNote>
             Per esercitare il recesso, l'utente può agire direttamente dall'area personale della
-            piattaforma o contattare il supporto Trustera prima della data di rinnovo.
+            piattaforma o contattare il supporto DR7 Trust prima della data di rinnovo.
           </SectionNote>
         </div>
       </div>
@@ -235,7 +235,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            L'utente si impegna a utilizzare la piattaforma Trustera nel pieno rispetto della normativa
+            L'utente si impegna a utilizzare la piattaforma DR7 Trust nel pieno rispetto della normativa
             vigente, in conformità ai presenti Termini e secondo i principi di buona fede e correttezza.
           </p>
           <p>È espressamente vietato:</p>
@@ -243,7 +243,7 @@ function TerminiContent() {
             <BulletItem>utilizzare la piattaforma per attività fraudolente, illecite o contrarie all'ordine pubblico</BulletItem>
             <BulletItem>caricare, trasmettere o gestire contenuti illegali, offensivi o in violazione di diritti di terzi</BulletItem>
             <BulletItem>
-              violare diritti di proprietà intellettuale, marchi, brevetti o segreti commerciali di Trustera
+              violare diritti di proprietà intellettuale, marchi, brevetti o segreti commerciali di DR7 Trust
               o di terzi
             </BulletItem>
             <BulletItem>
@@ -255,7 +255,7 @@ function TerminiContent() {
             </BulletItem>
             <BulletItem>
               rivendere, sublicenziare o trasferire a terzi l'accesso ai servizi senza previa autorizzazione
-              scritta di Trustera
+              scritta di DR7 Trust
             </BulletItem>
           </ul>
           <p>
@@ -273,19 +273,19 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera si impegna a rendere la piattaforma ragionevolmente disponibile e funzionante, adottando
+            DR7 Trust si impegna a rendere la piattaforma ragionevolmente disponibile e funzionante, adottando
             misure tecniche adeguate per garantire continuità e affidabilità del servizio.
           </p>
           <p>Il servizio può risultare temporaneamente non disponibile o limitato a causa di:</p>
           <ul className="space-y-1.5">
             <BulletItem>interventi di manutenzione ordinaria o straordinaria</BulletItem>
             <BulletItem>aggiornamenti, migrazioni o rilasci di nuove versioni della piattaforma</BulletItem>
-            <BulletItem>guasti tecnici, malfunzionamenti hardware o software non imputabili a Trustera</BulletItem>
-            <BulletItem>eventi di forza maggiore o cause di terzi al di fuori del controllo di Trustera</BulletItem>
+            <BulletItem>guasti tecnici, malfunzionamenti hardware o software non imputabili a DR7 Trust</BulletItem>
+            <BulletItem>eventi di forza maggiore o cause di terzi al di fuori del controllo di DR7 Trust</BulletItem>
             <BulletItem>attacchi informatici, intrusioni o altri eventi di sicurezza</BulletItem>
           </ul>
           <p>
-            Trustera non garantisce la disponibilità ininterrotta del servizio e non sarà responsabile per
+            DR7 Trust non garantisce la disponibilità ininterrotta del servizio e non sarà responsabile per
             eventuali danni derivanti da interruzioni temporanee, salvo quanto previsto dalla normativa
             applicabile.
           </p>
@@ -300,10 +300,10 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Tutti i diritti di proprietà intellettuale relativi alla piattaforma Trustera, inclusi ma non
+            Tutti i diritti di proprietà intellettuale relativi alla piattaforma DR7 Trust, inclusi ma non
             limitati a software, codice sorgente, interfacce grafiche, loghi, marchi, denominazioni,
             documentazione, algoritmi e contenuti editoriali, sono e rimangono di esclusiva proprietà di
-            Trustera o dei rispettivi licenziatari.
+            DR7 Trust o dei rispettivi licenziatari.
           </p>
           <p>
             L'accettazione dei presenti Termini concede all'utente esclusivamente un diritto di utilizzo
@@ -312,7 +312,7 @@ function TerminiContent() {
           </p>
           <SectionNote>
             Nessuna disposizione dei presenti Termini trasferisce all'utente alcun diritto di proprietà
-            intellettuale su Trustera o sui suoi componenti.
+            intellettuale su DR7 Trust o sui suoi componenti.
           </SectionNote>
         </div>
       </div>
@@ -334,11 +334,11 @@ function TerminiContent() {
               <Link to="/privacy" className="text-green-600 hover:underline font-medium">
                 Privacy Policy
               </Link>{' '}
-              di Trustera, che costituisce parte integrante dei presenti Termini.
+              di DR7 Trust, che costituisce parte integrante dei presenti Termini.
             </BulletItem>
             <BulletItem>
               Per i clienti che trattano dati personali di terzi tramite la piattaforma (es. firmatari
-              di documenti), Trustera agisce in qualità di Responsabile del Trattamento e può essere
+              di documenti), DR7 Trust agisce in qualità di Responsabile del Trattamento e può essere
               stipulato un apposito Data Processing Agreement (DPA).
             </BulletItem>
             <BulletItem>
@@ -357,7 +357,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Nei limiti consentiti dalla normativa applicabile, Trustera non sarà responsabile per danni
+            Nei limiti consentiti dalla normativa applicabile, DR7 Trust non sarà responsabile per danni
             indiretti, consequenziali, incidentali, punitivi o per perdita di profitti, dati, reputazione
             o opportunità commerciali derivanti dall'uso o dall'impossibilità di utilizzo della piattaforma.
           </p>
@@ -366,7 +366,7 @@ function TerminiContent() {
             per la firma, delle informazioni inserite e della loro conformità alla normativa vigente.
           </p>
           <p>
-            La responsabilità complessiva di Trustera verso l'utente, per qualsiasi causa, non potrà in
+            La responsabilità complessiva di DR7 Trust verso l'utente, per qualsiasi causa, non potrà in
             alcun caso superare i corrispettivi effettivamente pagati dall'utente nei dodici mesi
             precedenti all'evento che ha dato origine alla pretesa risarcitoria.
           </p>
@@ -381,7 +381,7 @@ function TerminiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera si riserva il diritto di aggiornare, modificare o integrare i presenti Termini di
+            DR7 Trust si riserva il diritto di aggiornare, modificare o integrare i presenti Termini di
             Servizio in qualsiasi momento, anche al fine di adeguarsi a variazioni normative, tecnologiche
             o commerciali.
           </p>
@@ -409,7 +409,7 @@ function TerminiContent() {
             I presenti Termini di Servizio sono disciplinati dalla legge italiana. Per qualsiasi
             controversia relativa all'interpretazione, all'esecuzione o alla risoluzione dei presenti
             Termini, le parti concordano sulla competenza esclusiva del Tribunale del luogo in cui
-            Trustera ha la propria sede legale.
+            DR7 Trust ha la propria sede legale.
           </p>
           <p>
             Per gli utenti che rivestono la qualità di consumatori ai sensi del Codice del Consumo (D.Lgs.
@@ -439,18 +439,18 @@ function ApiContent() {
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
             Le presenti Condizioni disciplinano l'accesso e l'utilizzo delle API (Application Programming
-            Interface) di Trustera, messe a disposizione degli utenti che hanno sottoscritto un piano API
+            Interface) di DR7 Trust, messe a disposizione degli utenti che hanno sottoscritto un piano API
             o che dispongono di accesso API nell'ambito del proprio piano commerciale.
           </p>
           <p>
-            Le API consentono l'integrazione delle funzionalità Trustera all'interno di applicazioni,
+            Le API consentono l'integrazione delle funzionalità DR7 Trust all'interno di applicazioni,
             piattaforme e sistemi di terze parti, permettendo operazioni quali la gestione documentale,
             l'invio di richieste di firma, il monitoraggio degli stati e l'acquisizione di evidenze
             di processo.
           </p>
           <p>
             Le presenti Condizioni si applicano congiuntamente ai Termini di Servizio generali di
-            Trustera, che restano integralmente vigenti. In caso di conflitto tra le due, prevalgono
+            DR7 Trust, che restano integralmente vigenti. In caso di conflitto tra le due, prevalgono
             le presenti Condizioni API per le materie qui regolate.
           </p>
         </div>
@@ -464,7 +464,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            L'accesso alle API Trustera avviene tramite credenziali di autenticazione (API Key o token
+            L'accesso alle API DR7 Trust avviene tramite credenziali di autenticazione (API Key o token
             di accesso) generate dalla piattaforma. Tali credenziali sono strettamente personali e
             riservate al titolare dell'account.
           </p>
@@ -481,7 +481,7 @@ function ApiContent() {
               immediatamente alla sua revoca e al rinnovo tramite il pannello di controllo.
             </BulletItem>
             <BulletItem>
-              Trustera non sarà responsabile per utilizzi non autorizzati derivanti da negligenza
+              DR7 Trust non sarà responsabile per utilizzi non autorizzati derivanti da negligenza
               nella custodia delle credenziali.
             </BulletItem>
           </ul>
@@ -496,7 +496,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera può mettere a disposizione degli sviluppatori un ambiente sandbox isolato, dedicato
+            DR7 Trust può mettere a disposizione degli sviluppatori un ambiente sandbox isolato, dedicato
             ai test di integrazione e allo sviluppo applicativo, senza impatto sull'ambiente di produzione
             e senza consumo dei volumi del piano sottoscritto.
           </p>
@@ -506,7 +506,7 @@ function ApiContent() {
               stesse performance, disponibilità o integrità dei dati.
             </BulletItem>
             <BulletItem>
-              I dati inseriti in sandbox sono fittizi e possono essere eliminati da Trustera senza
+              I dati inseriti in sandbox sono fittizi e possono essere eliminati da DR7 Trust senza
               preavviso.
             </BulletItem>
             <BulletItem>
@@ -554,7 +554,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Per garantire la stabilità e l'equità del servizio a tutti gli utenti, Trustera applica
+            Per garantire la stabilità e l'equità del servizio a tutti gli utenti, DR7 Trust applica
             limiti tecnici al numero di richieste API effettuabili in un determinato intervallo di
             tempo (rate limiting).
           </p>
@@ -572,7 +572,7 @@ function ApiContent() {
               nella propria integrazione.
             </BulletItem>
             <BulletItem>
-              Trustera può aggiornare i limiti tecnici comunicandolo con adeguato preavviso tramite
+              DR7 Trust può aggiornare i limiti tecnici comunicandolo con adeguato preavviso tramite
               i canali ufficiali.
             </BulletItem>
           </ul>
@@ -587,7 +587,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            L'utilizzo delle API Trustera è consentito esclusivamente per le finalità previste dal
+            L'utilizzo delle API DR7 Trust è consentito esclusivamente per le finalità previste dal
             piano sottoscritto e nel rispetto della normativa vigente.
           </p>
           <p>È espressamente vietato:</p>
@@ -598,13 +598,13 @@ function ApiContent() {
             </BulletItem>
             <BulletItem>
               effettuare richieste massive o automatizzate finalizzate a sovraccaricare
-              intenzionalmente i sistemi Trustera (DoS/DDoS)
+              intenzionalmente i sistemi DR7 Trust (DoS/DDoS)
             </BulletItem>
             <BulletItem>
               tentare di accedere a endpoint non documentati o non autorizzati per il piano dell'utente
             </BulletItem>
             <BulletItem>
-              rivendere o redistribuire l'accesso alle API a terzi senza accordo scritto con Trustera
+              rivendere o redistribuire l'accesso alle API a terzi senza accordo scritto con DR7 Trust
             </BulletItem>
             <BulletItem>
               utilizzare le API per raccogliere dati in modo non conforme al GDPR o ad altre normative
@@ -622,19 +622,19 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            L'utente che integra le API Trustera all'interno di proprie applicazioni o piattaforme è
+            L'utente che integra le API DR7 Trust all'interno di proprie applicazioni o piattaforme è
             responsabile della corretta implementazione dell'integrazione, del comportamento della
             propria applicazione verso gli utenti finali e della conformità normativa dell'intera
             soluzione sviluppata.
           </p>
           <ul className="space-y-1.5">
             <BulletItem>
-              Trustera non è responsabile per malfunzionamenti o errori derivanti da un'integrazione
+              DR7 Trust non è responsabile per malfunzionamenti o errori derivanti da un'integrazione
               non corretta da parte dell'utente.
             </BulletItem>
             <BulletItem>
               L'utente si impegna a informare i propri utenti finali del trattamento dei loro dati
-              personali effettuato tramite l'integrazione con Trustera.
+              personali effettuato tramite l'integrazione con DR7 Trust.
             </BulletItem>
             <BulletItem>
               L'utente è responsabile del rispetto delle obbligazioni di legge nei confronti dei
@@ -652,7 +652,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera può mettere a disposizione meccanismi di notifica asincrona tramite webhook,
+            DR7 Trust può mettere a disposizione meccanismi di notifica asincrona tramite webhook,
             consentendo all'utente di ricevere aggiornamenti in tempo reale sugli eventi rilevanti
             della piattaforma (es. firma completata, documento rifiutato, scadenza imminente).
           </p>
@@ -662,15 +662,15 @@ function ApiContent() {
               ricezione dei webhook.
             </BulletItem>
             <BulletItem>
-              Trustera effettua tentativi di consegna multipli in caso di mancata risposta
+              DR7 Trust effettua tentativi di consegna multipli in caso di mancata risposta
               dell'endpoint, secondo logiche di retry definite nella documentazione tecnica.
             </BulletItem>
             <BulletItem>
               L'utente deve verificare l'autenticità dei webhook ricevuti tramite i meccanismi di
-              firma e validazione messi a disposizione da Trustera.
+              firma e validazione messi a disposizione da DR7 Trust.
             </BulletItem>
             <BulletItem>
-              Trustera non garantisce la consegna in ordine cronologico degli eventi notificati
+              DR7 Trust non garantisce la consegna in ordine cronologico degli eventi notificati
               tramite webhook.
             </BulletItem>
           </ul>
@@ -685,12 +685,12 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera si impegna a garantire la disponibilità delle API secondo livelli di servizio
+            DR7 Trust si impegna a garantire la disponibilità delle API secondo livelli di servizio
             (SLA) eventualmente definiti nel piano API sottoscritto o nella documentazione commerciale.
           </p>
           <ul className="space-y-1.5">
             <BulletItem>
-              In assenza di SLA specifici, Trustera fornisce le API con ragionevole impegno di
+              In assenza di SLA specifici, DR7 Trust fornisce le API con ragionevole impegno di
               continuità, senza garantire la disponibilità al 100%.
             </BulletItem>
             <BulletItem>
@@ -714,7 +714,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera adotta misure di sicurezza tecniche e organizzative adeguate a proteggere le
+            DR7 Trust adotta misure di sicurezza tecniche e organizzative adeguate a proteggere le
             API e i dati trattati attraverso esse. L'utente è parimenti tenuto ad adottare pratiche
             di sicurezza appropriate nella propria integrazione.
           </p>
@@ -727,11 +727,11 @@ function ApiContent() {
               inclusa la gestione sicura delle chiavi di autenticazione.
             </BulletItem>
             <BulletItem>
-              L'utente è tenuto a segnalare tempestivamente a Trustera qualsiasi vulnerabilità
+              L'utente è tenuto a segnalare tempestivamente a DR7 Trust qualsiasi vulnerabilità
               o incidente di sicurezza rilevato nell'ambito dell'integrazione.
             </BulletItem>
             <BulletItem>
-              Trustera si riserva il diritto di revocare immediatamente l'accesso in caso di
+              DR7 Trust si riserva il diritto di revocare immediatamente l'accesso in caso di
               attività sospette o potenzialmente lesive per la sicurezza della piattaforma.
             </BulletItem>
           </ul>
@@ -746,7 +746,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera si riserva il diritto di sospendere o revocare l'accesso alle API in qualsiasi
+            DR7 Trust si riserva il diritto di sospendere o revocare l'accesso alle API in qualsiasi
             momento, con o senza preavviso, nei seguenti casi:
           </p>
           <ul className="space-y-1.5">
@@ -768,7 +768,7 @@ function ApiContent() {
             </BulletItem>
           </ul>
           <SectionNote>
-            In caso di sospensione, Trustera fornirà all'utente le informazioni necessarie per
+            In caso di sospensione, DR7 Trust fornirà all'utente le informazioni necessarie per
             regolarizzare la propria posizione, ove possibile e nei limiti della normativa applicabile.
           </SectionNote>
         </div>
@@ -782,7 +782,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera si riserva il diritto di modificare, aggiornare, deprecare o interrompere
+            DR7 Trust si riserva il diritto di modificare, aggiornare, deprecare o interrompere
             funzionalità delle API, incluse versioni specifiche, endpoint, parametri o comportamenti.
           </p>
           <ul className="space-y-1.5">
@@ -791,7 +791,7 @@ function ApiContent() {
               preavviso minimo di 90 giorni, salvo urgenze legate a sicurezza o normativa.
             </BulletItem>
             <BulletItem>
-              Trustera si impegna a mantenere il versionamento delle API per consentire agli utenti
+              DR7 Trust si impegna a mantenere il versionamento delle API per consentire agli utenti
               un periodo di transizione adeguato.
             </BulletItem>
             <BulletItem>
@@ -801,7 +801,7 @@ function ApiContent() {
           </ul>
           <p>
             L'utente è responsabile di aggiornare la propria integrazione in risposta alle modifiche
-            comunicate da Trustera entro i termini indicati.
+            comunicate da DR7 Trust entro i termini indicati.
           </p>
         </div>
       </div>
@@ -814,14 +814,14 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Le API Trustera, la relativa documentazione tecnica, gli SDK, gli esempi di codice e
-            qualsiasi altro materiale tecnico fornito da Trustera sono protetti da diritti di
-            proprietà intellettuale e rimangono di esclusiva proprietà di Trustera o dei rispettivi
+            Le API DR7 Trust, la relativa documentazione tecnica, gli SDK, gli esempi di codice e
+            qualsiasi altro materiale tecnico fornito da DR7 Trust sono protetti da diritti di
+            proprietà intellettuale e rimangono di esclusiva proprietà di DR7 Trust o dei rispettivi
             licenziatari.
           </p>
           <ul className="space-y-1.5">
             <BulletItem>
-              Trustera concede all'utente una licenza limitata, non esclusiva, non trasferibile
+              DR7 Trust concede all'utente una licenza limitata, non esclusiva, non trasferibile
               e revocabile per l'utilizzo delle API secondo quanto previsto dal piano sottoscritto.
             </BulletItem>
             <BulletItem>
@@ -829,8 +829,8 @@ function ApiContent() {
               rispetto delle presenti Condizioni.
             </BulletItem>
             <BulletItem>
-              Non è consentito presentare la propria integrazione come se fosse un prodotto Trustera,
-              né utilizzare marchi, loghi o denominazioni di Trustera senza autorizzazione scritta.
+              Non è consentito presentare la propria integrazione come se fosse un prodotto DR7 Trust,
+              né utilizzare marchi, loghi o denominazioni di DR7 Trust senza autorizzazione scritta.
             </BulletItem>
           </ul>
         </div>
@@ -844,7 +844,7 @@ function ApiContent() {
         </div>
         <div className="pl-0 sm:pl-10 space-y-3 text-gray-600 text-[15px] leading-relaxed">
           <p>
-            Trustera non sarà responsabile per danni diretti, indiretti, incidentali o consequenziali
+            DR7 Trust non sarà responsabile per danni diretti, indiretti, incidentali o consequenziali
             derivanti dall'uso delle API, da interruzioni del servizio, da errori nelle risposte o
             da modifiche apportate alle API stesse.
           </p>
@@ -854,11 +854,11 @@ function ApiContent() {
               del rilascio in produzione.
             </BulletItem>
             <BulletItem>
-              Trustera non garantisce che le API siano prive di errori o che il loro funzionamento
+              DR7 Trust non garantisce che le API siano prive di errori o che il loro funzionamento
               sia ininterrotto in qualsiasi circostanza.
             </BulletItem>
             <BulletItem>
-              La responsabilità massima di Trustera nei confronti dell'utente per qualsiasi
+              La responsabilità massima di DR7 Trust nei confronti dell'utente per qualsiasi
               controversia relativa alle API non potrà superare i corrispettivi pagati negli
               ultimi 12 mesi per il piano API sottoscritto.
             </BulletItem>
@@ -877,7 +877,7 @@ function ApiContent() {
             Le presenti Condizioni API sono disciplinate dalla legge italiana. Per qualsiasi
             controversia relativa all'interpretazione, all'applicazione o all'esecuzione delle
             presenti Condizioni, le parti concordano sulla competenza esclusiva del Tribunale
-            del luogo in cui Trustera ha la propria sede legale.
+            del luogo in cui DR7 Trust ha la propria sede legale.
           </p>
           <p>
             Nella misura in cui le presenti Condizioni API integrano o modificano i Termini di
@@ -946,7 +946,7 @@ export default function TermsPage() {
           <Link to="/" className="text-green-600 hover:underline text-sm font-medium">
             Torna alla home
           </Link>
-          <span className="text-xs text-gray-400 break-words">Trustera — Infrastructure for Digital Trust</span>
+          <span className="text-xs text-gray-400 break-words">DR7 Trust — Infrastructure for Digital Trust</span>
         </div>
       </div>
     </SiteLayout>

@@ -52,18 +52,18 @@ async function sendWhatsAppSigningLink(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chatId,
-        message: `Ciao ${signerName},\n\n*${senderName}* ti ha inviato un documento da firmare: *${documentName}*\n\nClicca qui per firmarlo:\n${signingUrl}\n\nIl link scade tra 12 ore.\n\n_Trustera - Infrastructure for Digital Trust_`
+        message: `Ciao ${signerName},\n\n*${senderName}* ti ha inviato un documento da firmare: *${documentName}*\n\nClicca qui per firmarlo:\n${signingUrl}\n\nIl link scade tra 12 ore.\n\n_DR7 Trust - Infrastructure for Digital Trust_`
       })
     })
     const data = await res.json()
     if (res.ok && data.idMessage) {
-      console.log('[trustera-send-signing] WhatsApp sent:', data.idMessage)
+      console.log('[dr7trust-send-signing] WhatsApp sent:', data.idMessage)
       return true
     }
-    console.warn('[trustera-send-signing] WhatsApp response not OK:', data)
+    console.warn('[dr7trust-send-signing] WhatsApp response not OK:', data)
     return false
   } catch (err: any) {
-    console.warn('[trustera-send-signing] WhatsApp error:', err.message)
+    console.warn('[dr7trust-send-signing] WhatsApp error:', err.message)
     return false
   }
 }
@@ -84,7 +84,7 @@ function buildSigningEmailHtml(signerName: string, senderName: string, documentN
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
+              <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" style="height: 80px; width: auto; max-width: 200px;" />
               <p style="margin: 8px 0 0; color: #666; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px;">Firma Elettronica</p>
             </td>
           </tr>
@@ -115,7 +115,7 @@ function buildSigningEmailHtml(signerName: string, senderName: string, documentN
           <tr>
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
-                Trustera - Infrastructure for Digital Trust<br/>
+                DR7 Trust - Infrastructure for Digital Trust<br/>
                 <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
@@ -151,7 +151,7 @@ function buildApprovalEmailHtml(
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height: 80px; width: auto; max-width: 200px;" />
+              <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" style="height: 80px; width: auto; max-width: 200px;" />
               <p style="margin: 8px 0 0; color: #666; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px;">Richiesta di Approvazione</p>
             </td>
           </tr>
@@ -192,7 +192,7 @@ function buildApprovalEmailHtml(
           <tr>
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
-                Trustera - Infrastructure for Digital Trust<br/>
+                DR7 Trust - Infrastructure for Digital Trust<br/>
                 <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
@@ -241,7 +241,7 @@ export async function processSendSigners(
       .single()
 
     if (signerInsertError) {
-      console.error('[trustera-send-signing] Failed to insert signer:', signerInsertError.message)
+      console.error('[dr7trust-send-signing] Failed to insert signer:', signerInsertError.message)
       throw signerInsertError
     }
 
@@ -253,7 +253,7 @@ export async function processSendSigners(
         .eq('signer_index', signerIndex)
 
       if (fieldLinkError) {
-        console.warn('[trustera-send-signing] Field link error:', fieldLinkError.message)
+        console.warn('[dr7trust-send-signing] Field link error:', fieldLinkError.message)
       }
     }
 
@@ -310,21 +310,21 @@ export async function processSendSigners(
     } else {
       try {
         await resend.emails.send({
-          from: 'Trustera <info@dr7trust.com>',
+          from: 'DR7 Trust <info@dr7trust.com>',
           replyTo: 'info@dr7trust.com',
           to: signer.email!,
           subject: `${senderName} ti ha inviato un documento da firmare`,
-          text: `Ciao ${signer.name},\n\n${senderName} ti ha inviato un documento da firmare: ${doc.name}\n\nClicca qui per visualizzare e firmare il documento:\n${signingUrl}\n\nQuesto link scade tra 12 ore.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
+          text: `Ciao ${signer.name},\n\n${senderName} ti ha inviato un documento da firmare: ${doc.name}\n\nClicca qui per visualizzare e firmare il documento:\n${signingUrl}\n\nQuesto link scade tra 12 ore.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
           html: buildSigningEmailHtml(signer.name, senderName, doc.name, signingUrl)
         })
         await logAudit(documentId, 'email_sent', signer.email, undefined, undefined, { channel: 'email', signer_name: signer.name })
       } catch (emailErr: any) {
-        console.error('[trustera-send-signing] Email send failed for', signer.email, ':', emailErr.message)
+        console.error('[dr7trust-send-signing] Email send failed for', signer.email, ':', emailErr.message)
         throw emailErr
       }
     }
 
-    console.log('[trustera-send-signing] Signer processed:', signer.email)
+    console.log('[dr7trust-send-signing] Signer processed:', signer.email)
   }
 }
 
@@ -360,12 +360,12 @@ export const handler: Handler = async (event) => {
       .single()
 
     if (docError || !doc) {
-      console.error('[trustera-send-signing] Document not found:', docError?.message)
+      console.error('[dr7trust-send-signing] Document not found:', docError?.message)
       return { statusCode: 404, body: JSON.stringify({ error: 'Documento non trovato' }) }
     }
 
     // Get sender name
-    let senderName = 'Un utente Trustera'
+    let senderName = 'Un utente DR7 Trust'
     if (doc.owner_id) {
       const { data: { user: ownerUser } } = await supabase.auth.admin.getUserById(doc.owner_id)
       if (ownerUser?.user_metadata?.full_name) {
@@ -404,7 +404,7 @@ export const handler: Handler = async (event) => {
         .eq('id', documentId)
 
       if (updateError) {
-        console.error('[trustera-send-signing] Document update failed:', updateError.message)
+        console.error('[dr7trust-send-signing] Document update failed:', updateError.message)
         throw updateError
       }
 
@@ -415,17 +415,17 @@ export const handler: Handler = async (event) => {
 
         try {
           await resend.emails.send({
-            from: 'Trustera <info@dr7trust.com>',
+            from: 'DR7 Trust <info@dr7trust.com>',
             replyTo: 'info@dr7trust.com',
             to: approver.email,
             subject: `${senderName} richiede la tua approvazione: ${doc.name}`,
-            text: `Ciao ${approver.name},\n\n${senderName} richiede la tua approvazione per il documento "${doc.name}".\n\nFirmatari previsti: ${signerNames.join(', ')}\n\nApprova: ${approveUrl}\nRifiuta: ${rejectUrl}\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
+            text: `Ciao ${approver.name},\n\n${senderName} richiede la tua approvazione per il documento "${doc.name}".\n\nFirmatari previsti: ${signerNames.join(', ')}\n\nApprova: ${approveUrl}\nRifiuta: ${rejectUrl}\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
             html: buildApprovalEmailHtml(approver.name, senderName, doc.name, signerNames, approveUrl, rejectUrl)
           })
-          console.log('[trustera-send-signing] Approval email sent to:', approver.email)
+          console.log('[dr7trust-send-signing] Approval email sent to:', approver.email)
           await logAudit(documentId, 'approval_requested', approver.email, undefined, undefined, { approver_name: approver.name })
         } catch (err: any) {
-          console.warn('[trustera-send-signing] Approval email failed for', approver.email, ':', err.message)
+          console.warn('[dr7trust-send-signing] Approval email failed for', approver.email, ':', err.message)
         }
       }
 
@@ -450,7 +450,7 @@ export const handler: Handler = async (event) => {
       .eq('id', documentId)
 
     if (statusError) {
-      console.error('[trustera-send-signing] Status update failed:', statusError.message)
+      console.error('[dr7trust-send-signing] Status update failed:', statusError.message)
     }
 
     return {
@@ -458,7 +458,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ success: true, signerCount: signers.length, approverCount: 0 })
     }
   } catch (error: any) {
-    console.error('[trustera-send-signing] Error:', error)
+    console.error('[dr7trust-send-signing] Error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

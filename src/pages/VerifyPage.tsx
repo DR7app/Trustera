@@ -95,7 +95,7 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (!hash) { setError('Hash mancante'); setLoading(false); return }
-    fetch('/.netlify/functions/trustera-verify', {
+    fetch('/.netlify/functions/dr7trust-verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hash })
@@ -152,7 +152,7 @@ export default function VerifyPage() {
         {/* Header */}
         <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4">
           <div className="flex items-center gap-4 mb-2">
-            <img src="/trustera-logo.png" alt="Trustera" className="h-10 sm:h-12" />
+            <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-10 sm:h-12" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Audit Trail - Firma Elettronica</h1>
           <p className="text-sm text-gray-500 mt-1 break-words">{data.documentName}{data.signers[0] ? ` - ${data.signers[0].name}` : ''}</p>
@@ -246,13 +246,13 @@ export default function VerifyPage() {
               Firma elettronica avanzata conforme al Regolamento eIDAS (UE) 910/2014
             </p>
             <p className="text-[10px] text-gray-400">
-              Questo certificato attesta l'autenticita e l'integrita del documento firmato digitalmente tramite Trustera.
+              Questo certificato attesta l'autenticita e l'integrita del documento firmato digitalmente tramite DR7 Trust.
             </p>
             <p className="text-[10px] text-gray-400 mt-2">
               Documento generato il {new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome', dateStyle: 'short', timeStyle: 'medium' })}
             </p>
             <div className="flex items-center justify-center gap-2 mt-2">
-              <img src="/trustera-logo.png" alt="Trustera" className="h-6" />
+              <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-6" />
               <span className="text-xs text-green-600 font-medium">
                 <a href="https://dr7trust.com" target="_blank" rel="noreferrer">www.dr7trust.com</a>
               </span>

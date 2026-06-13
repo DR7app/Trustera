@@ -11,44 +11,43 @@ const SITE_URL = process.env.SITE_URL || 'https://dr7trust.com'
 export const handler: Handler = async (event) => {
     const params = event.queryStringParameters || {}
     const tokenHash = params.token_hash
-    const type = params.type || 'recovery'
-    const redirectTo = params.redirect_to || `${SITE_URL}/reset-password`
+    const type = params.type || 'signup'
+    const redirectTo = params.redirect_to || `${SITE_URL}/dashboard`
 
     if (!tokenHash) {
         return {
             statusCode: 302,
-            headers: { Location: `${SITE_URL}/login?error=${encodeURIComponent('Token mancante')}` },
+            headers: { Location: `${SITE_URL}/login?error=Token mancante` },
             body: ''
         }
     }
 
     try {
-        // Verify the recovery token
-        const { data, error } = await supabase.auth.verifyOtp({
+        // Verify the token via Supabase Auth API
+        const { error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: type as any
         })
 
         if (error) {
-            console.error('[trustera-verify-reset] Verification error:', error.message)
+            console.error('[dr7trust-verify-email] Verification error:', error.message)
             return {
                 statusCode: 302,
-                headers: { Location: `${SITE_URL}/login?error=${encodeURIComponent('Link di recupero non valido o scaduto. Richiedi un nuovo link.')}` },
+                headers: { Location: `${SITE_URL}/login?error=${encodeURIComponent('Link di verifica non valido o scaduto. Riprova la registrazione.')}` },
                 body: ''
             }
         }
 
-        // Pass the session access token so the frontend can use it to update the password
-        const accessToken = data.session?.access_token || ''
-        const refreshToken = data.session?.refresh_token || ''
+        console.log('[dr7trust-verify-email] Email verified successfully')
 
+        // Redirect to dashboard (or login — user will need to sign in)
         return {
             statusCode: 302,
-            headers: { Location: `${SITE_URL}/reset-password?access_token=${accessToken}&refresh_token=${refreshToken}` },
+            headers: { Location: `${SITE_URL}/login?verified=true` },
             body: ''
         }
     } catch (error: any) {
-        console.error('[trustera-verify-reset] Error:', error)
+        console.error('[dr7trust-verify-email] Error:', error)
         return {
             statusCode: 302,
             headers: { Location: `${SITE_URL}/login?error=${encodeURIComponent('Errore nella verifica. Riprova.')}` },

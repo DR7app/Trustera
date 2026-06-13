@@ -5,7 +5,7 @@ import { Resend } from 'resend'
 import crypto from 'crypto'
 import QRCode from 'qrcode'
 
-// Trustera Supabase — primary
+// DR7 Trust Supabase — primary
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://zkcvsewfqnukdkvcairk.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -45,8 +45,8 @@ async function sendSignedPdfEmail(
       : `Hai firmato: ${documentName}`
 
     const bodyText = isOwner
-      ? `Il documento "${documentName}" è stato firmato da tutti i firmatari (${signerNames}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
-      : `Hai firmato il documento "${documentName}".\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
+      ? `Il documento "${documentName}" è stato firmato da tutti i firmatari (${signerNames}).\n\nIl PDF firmato è in allegato.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`
+      : `Hai firmato il documento "${documentName}".\n\nIl PDF firmato è in allegato.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`
 
     const bodyHtml = `<!DOCTYPE html>
 <html lang="it"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -55,7 +55,7 @@ async function sendSignedPdfEmail(
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     ${isOwner
@@ -71,7 +71,7 @@ async function sendSignedPdfEmail(
   <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
-      Trustera - Infrastructure for Digital Trust<br/>
+      DR7 Trust - Infrastructure for Digital Trust<br/>
       <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
@@ -82,7 +82,7 @@ async function sendSignedPdfEmail(
     const safeName = documentName.replace(/[^a-zA-Z0-9._-]/g, '_')
 
     await resend.emails.send({
-      from: 'Trustera <info@dr7trust.com>',
+      from: 'DR7 Trust <info@dr7trust.com>',
       replyTo: 'info@dr7trust.com',
       to,
       subject,
@@ -93,9 +93,9 @@ async function sendSignedPdfEmail(
         content: pdfBytes,
       }],
     })
-    console.log('[trustera-sign-complete] Signed PDF email sent to:', to)
+    console.log('[dr7trust-sign-complete] Signed PDF email sent to:', to)
   } catch (err: any) {
-    console.warn('[trustera-sign-complete] Email send failed for', to, ':', err.message)
+    console.warn('[dr7trust-sign-complete] Email send failed for', to, ':', err.message)
   }
 }
 
@@ -109,26 +109,26 @@ function cleanPhoneForChatId(phone: string): string {
 
 async function sendWhatsAppPdf(phone: string, publicUrl: string, documentName: string, signerName: string, source?: string): Promise<void> {
   // Use DR7's Green API for DR7-sourced documents (same number that sent the signing link)
-  // Use Trustera's Green API for everything else
+  // Use DR7 Trust's Green API for everything else
   let idInstance: string | undefined
   let apiToken: string | undefined
 
   if (source && source.startsWith('dr7') && process.env.DR7_GREEN_API_INSTANCE_ID && process.env.DR7_GREEN_API_TOKEN) {
     idInstance = process.env.DR7_GREEN_API_INSTANCE_ID
     apiToken = process.env.DR7_GREEN_API_TOKEN
-    console.log('[trustera-sign-complete] Using DR7 Green API for WhatsApp (same conversation)')
+    console.log('[dr7trust-sign-complete] Using DR7 Green API for WhatsApp (same conversation)')
   } else {
     idInstance = process.env.GREEN_API_INSTANCE_ID
     apiToken = process.env.GREEN_API_TOKEN
   }
 
   if (!idInstance || !apiToken) {
-    console.warn('[trustera-sign-complete] GREEN_API credentials missing, cannot send WhatsApp PDF')
+    console.warn('[dr7trust-sign-complete] GREEN_API credentials missing, cannot send WhatsApp PDF')
     return
   }
 
   const chatId = cleanPhoneForChatId(phone) + '@c.us'
-  console.log('[trustera-sign-complete] Sending WhatsApp PDF to chatId:', chatId, 'url:', publicUrl)
+  console.log('[dr7trust-sign-complete] Sending WhatsApp PDF to chatId:', chatId, 'url:', publicUrl)
   try {
     const res = await fetch(`https://api.green-api.com/waInstance${idInstance}/sendFileByUrl/${apiToken}`, {
       method: 'POST',
@@ -137,17 +137,17 @@ async function sendWhatsAppPdf(phone: string, publicUrl: string, documentName: s
         chatId,
         urlFile: publicUrl,
         fileName: `${documentName.replace(/[^a-zA-Z0-9._-]/g, '_')}_firmato.pdf`,
-        caption: `Documento firmato: ${documentName}\nFirmato da: ${signerName}\n\nTrustera - Infrastructure for Digital Trust`
+        caption: `Documento firmato: ${documentName}\nFirmato da: ${signerName}\n\nDR7 Trust - Infrastructure for Digital Trust`
       })
     })
     const data = await res.json()
     if (res.ok && data.idMessage) {
-      console.log('[trustera-sign-complete] WhatsApp PDF sent successfully:', data.idMessage)
+      console.log('[dr7trust-sign-complete] WhatsApp PDF sent successfully:', data.idMessage)
     } else {
-      console.warn('[trustera-sign-complete] WhatsApp PDF response not OK:', JSON.stringify(data))
+      console.warn('[dr7trust-sign-complete] WhatsApp PDF response not OK:', JSON.stringify(data))
     }
   } catch (err: any) {
-    console.warn('[trustera-sign-complete] WhatsApp PDF send failed for', phone, ':', err.message)
+    console.warn('[dr7trust-sign-complete] WhatsApp PDF send failed for', phone, ':', err.message)
   }
 }
 
@@ -217,19 +217,19 @@ async function buildSignedPdf(
     }
   }
 
-  // ── Trustera Verified Seal on last page ──────────────────────────────────
+  // ── DR7 Trust Verified Seal on last page ──────────────────────────────────
   const verifyUrl = `https://dr7trust.com/verify/${originalHash}`
   const qrPng = await QRCode.toBuffer(verifyUrl, { type: 'png', width: 300, margin: 1 })
   const qrImage = await pdfDoc.embedPng(qrPng)
 
-  // Embed Trustera logo (PNG with transparency) + icon
+  // Embed DR7 Trust logo (PNG with transparency) + icon
   let logoImage: any = null
   let iconImage: any = null
   try {
     const [logoPngResp, logoJpgResp, iconResp] = await Promise.all([
-      fetch('https://dr7trust.com/trustera-logo.png'),
-      fetch('https://dr7trust.com/trustera-logo.jpeg'),
-      fetch('https://dr7trust.com/trustera-icon.jpeg'),
+      fetch('https://dr7trust.com/dr7trust-logo.png'),
+      fetch('https://dr7trust.com/dr7trust-logo.png'),
+      fetch('https://dr7trust.com/dr7trust-icon.png'),
     ])
     if (logoPngResp.ok) {
       logoImage = await pdfDoc.embedPng(new Uint8Array(await logoPngResp.arrayBuffer()))
@@ -284,7 +284,7 @@ async function buildSignedPdf(
       page.drawImage(logoImage, { x: sx + 4 * scale, y: headerY - 1 * scale, width: hLogoW, height: hLogoH })
       page.drawText('Verified Seal', { x: sx + 4 * scale + hLogoW + 2 * scale, y: headerY + 1 * scale, size: 4.5 * scale, font, color: lightGray })
     } else {
-      page.drawText('Trustera  Verified Seal', { x: sx + 4 * scale, y: headerY + 1 * scale, size: 4.5 * scale, font: boldFont, color: gray })
+      page.drawText('DR7 Trust  Verified Seal', { x: sx + 4 * scale, y: headerY + 1 * scale, size: 4.5 * scale, font: boldFont, color: gray })
     }
 
     const infoX = sx + 4 * scale
@@ -329,7 +329,7 @@ async function buildSignedPdf(
         lastPage.drawImage(logoImage, { x: locSealX + 4, y: locHeaderY - 1, width: hLogoW, height: hLogoH })
         lastPage.drawText('Verified Seal', { x: locSealX + 4 + hLogoW + 2, y: locHeaderY + 1, size: 4.5, font, color: lightGray })
       } else {
-        lastPage.drawText('Trustera  Verified Seal', { x: locSealX + 4, y: locHeaderY + 1, size: 4.5, font: boldFont, color: gray })
+        lastPage.drawText('DR7 Trust  Verified Seal', { x: locSealX + 4, y: locHeaderY + 1, size: 4.5, font: boldFont, color: gray })
       }
       const locInfoX = locSealX + 4
       const locInfoY = locHeaderY - 9
@@ -430,7 +430,7 @@ async function saveMarketingConsent(
     .upsert(leadPayload, { onConflict: 'email' })
 
   if (leadError) {
-    console.warn('[trustera-sign-complete] Lead upsert failed:', leadError.message)
+    console.warn('[dr7trust-sign-complete] Lead upsert failed:', leadError.message)
   }
 
   // Upsert marketing_consents table
@@ -448,7 +448,7 @@ async function saveMarketingConsent(
     )
 
   if (consentError) {
-    console.warn('[trustera-sign-complete] marketing_consents upsert failed:', consentError.message)
+    console.warn('[dr7trust-sign-complete] marketing_consents upsert failed:', consentError.message)
   }
 }
 
@@ -476,7 +476,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (signerLookupError) {
-      console.error('[trustera-sign-complete] Signer lookup error:', signerLookupError.message)
+      console.error('[dr7trust-sign-complete] Signer lookup error:', signerLookupError.message)
     }
 
     if (signerRow) {
@@ -512,7 +512,7 @@ export const handler: Handler = async (event) => {
         .single()
 
       if (docError || !doc) {
-        console.error('[trustera-sign-complete] Document not found for signer:', signerRow.document_id, docError?.message)
+        console.error('[dr7trust-sign-complete] Document not found for signer:', signerRow.document_id, docError?.message)
         return { statusCode: 404, body: JSON.stringify({ error: 'Documento non trovato' }) }
       }
 
@@ -529,7 +529,7 @@ export const handler: Handler = async (event) => {
         .eq('id', signerRow.id)
 
       if (signerUpdateError) {
-        console.error('[trustera-sign-complete] Signer update failed:', signerUpdateError.message)
+        console.error('[dr7trust-sign-complete] Signer update failed:', signerUpdateError.message)
         throw signerUpdateError
       }
 
@@ -541,7 +541,7 @@ export const handler: Handler = async (event) => {
 
       // Save field values for this signer
       if (fieldValues && typeof fieldValues === 'object') {
-        console.log('[trustera-sign-complete] Saving field values:', JSON.stringify(fieldValues))
+        console.log('[dr7trust-sign-complete] Saving field values:', JSON.stringify(fieldValues))
         for (const [fieldId, value] of Object.entries(fieldValues)) {
           // Try with signer_id first, fallback to just fieldId
           const { data: updated, error: updateErr } = await supabase
@@ -551,9 +551,9 @@ export const handler: Handler = async (event) => {
             .select('id')
 
           if (updateErr) {
-            console.warn('[trustera-sign-complete] Field update error for', fieldId, ':', updateErr.message)
+            console.warn('[dr7trust-sign-complete] Field update error for', fieldId, ':', updateErr.message)
           } else {
-            console.log('[trustera-sign-complete] Field', fieldId, '=', String(value), 'saved:', updated?.length, 'rows')
+            console.log('[dr7trust-sign-complete] Field', fieldId, '=', String(value), 'saved:', updated?.length, 'rows')
           }
         }
       }
@@ -565,14 +565,14 @@ export const handler: Handler = async (event) => {
         .eq('document_id', doc.id)
 
       if (allSignersError) {
-        console.error('[trustera-sign-complete] Failed to fetch all signers:', allSignersError.message)
+        console.error('[dr7trust-sign-complete] Failed to fetch all signers:', allSignersError.message)
         throw allSignersError
       }
 
       const allSigned = allSigners.every((s: any) => s.status === 'signed')
 
       if (!allSigned) {
-        console.log('[trustera-sign-complete] Not all signers done yet for doc:', doc.id)
+        console.log('[dr7trust-sign-complete] Not all signers done yet for doc:', doc.id)
         return {
           statusCode: 200,
           body: JSON.stringify({ allDone: false })
@@ -645,15 +645,15 @@ export const handler: Handler = async (event) => {
       // Upload signed PDF to storage
       const fileName = `signed/${doc.id}_signed_${Date.now()}.pdf`
       const { error: uploadError } = await supabase.storage
-        .from('trustera')
+        .from('dr7trust')
         .upload(fileName, Buffer.from(signedPdfBytes), { contentType: 'application/pdf' })
 
       if (uploadError) {
-        console.error('[trustera-sign-complete] Upload failed:', uploadError.message)
+        console.error('[dr7trust-sign-complete] Upload failed:', uploadError.message)
         throw uploadError
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('trustera').getPublicUrl(fileName)
+      const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
 
       // Update document: status=signed, signed_pdf_url, signed_at, hash
       const { error: docUpdateError } = await supabase
@@ -667,14 +667,14 @@ export const handler: Handler = async (event) => {
         .eq('id', doc.id)
 
       if (docUpdateError) {
-        console.error('[trustera-sign-complete] Document update failed:', docUpdateError.message)
+        console.error('[dr7trust-sign-complete] Document update failed:', docUpdateError.message)
         throw docUpdateError
       }
 
       // Log to signed_documents_log
       try {
         await supabase.from('signed_documents_log').insert({
-          source: 'trustera',
+          source: 'dr7trust',
           document_name: doc.name,
           signer_name: allSigners.map((s: any) => s.signer_name).join(', '),
           signer_email: allSigners.map((s: any) => s.signer_email).join(', '),
@@ -693,7 +693,7 @@ export const handler: Handler = async (event) => {
           }
         })
       } catch (logErr: any) {
-        console.warn('[trustera-sign-complete] signed_documents_log insert failed:', logErr.message)
+        console.warn('[dr7trust-sign-complete] signed_documents_log insert failed:', logErr.message)
       }
 
       const signedPdfBuffer = Buffer.from(signedPdfBytes)
@@ -712,18 +712,18 @@ export const handler: Handler = async (event) => {
         try {
           const channel = (s as any).notification_channel || 'email'
           if (channel === 'whatsapp' && s.signer_phone) {
-            console.log('[trustera-sign-complete] Sending signed PDF via WhatsApp to:', s.signer_phone)
+            console.log('[dr7trust-sign-complete] Sending signed PDF via WhatsApp to:', s.signer_phone)
             await sendWhatsAppPdf(s.signer_phone, publicUrl, doc.name, s.signer_name, doc.source)
             await logAudit(doc.id, 'signed_pdf_sent', s.signer_email, undefined, undefined, { channel: 'whatsapp', signer_name: s.signer_name })
           } else if (s.signer_email) {
-            console.log('[trustera-sign-complete] Sending signed PDF via email to:', s.signer_email)
+            console.log('[dr7trust-sign-complete] Sending signed PDF via email to:', s.signer_email)
             await sendSignedPdfEmail(s.signer_email, doc.name, s.signer_name, signedPdfBuffer, false)
             await logAudit(doc.id, 'signed_pdf_sent', s.signer_email, undefined, undefined, { channel: 'email', signer_name: s.signer_name })
           } else {
-            console.warn('[trustera-sign-complete] Signer has no email or phone, skipping:', s.signer_name)
+            console.warn('[dr7trust-sign-complete] Signer has no email or phone, skipping:', s.signer_name)
           }
         } catch (sendErr: any) {
-          console.error('[trustera-sign-complete] Failed to send signed PDF to signer:', s.signer_name, sendErr.message)
+          console.error('[dr7trust-sign-complete] Failed to send signed PDF to signer:', s.signer_name, sendErr.message)
         }
       }
 
@@ -734,9 +734,9 @@ export const handler: Handler = async (event) => {
           if (!approver.email) continue
           try {
             const approverSubject = `Documento firmato: ${doc.name}`
-            const approverBodyText = `Ciao ${approver.name},\n\nIl documento "${doc.name}" che hai approvato è stato firmato da tutti i firmatari (${signerNamesList}).\n\nIl PDF firmato è in allegato.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`
+            const approverBodyText = `Ciao ${approver.name},\n\nIl documento "${doc.name}" che hai approvato è stato firmato da tutti i firmatari (${signerNamesList}).\n\nIl PDF firmato è in allegato.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`
             await resend.emails.send({
-              from: 'Trustera <info@dr7trust.com>',
+              from: 'DR7 Trust <info@dr7trust.com>',
               replyTo: 'info@dr7trust.com',
               to: approver.email,
               subject: approverSubject,
@@ -748,7 +748,7 @@ export const handler: Handler = async (event) => {
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">
   <tr><td style="padding:32px 40px 0;text-align:center;">
-    <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" style="height:80px;width:auto;max-width:200px;" />
+    <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" style="height:80px;width:auto;max-width:200px;" />
   </td></tr>
   <tr><td style="padding:24px 40px 0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#333;line-height:1.6;">
     <p style="margin:0 0 12px;">Ciao <strong>${approver.name}</strong>,</p>
@@ -764,7 +764,7 @@ export const handler: Handler = async (event) => {
   <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>
   <tr><td style="padding:24px 40px 32px;text-align:center;">
     <p style="margin:0;color:#d1d5db;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:11px;">
-      Trustera - Infrastructure for Digital Trust<br/>
+      DR7 Trust - Infrastructure for Digital Trust<br/>
       <a href="https://dr7trust.com" style="color:#16a34a;text-decoration:none;">www.dr7trust.com</a>
     </p>
   </td></tr>
@@ -776,9 +776,9 @@ export const handler: Handler = async (event) => {
                 content: signedPdfBuffer,
               }]
             })
-            console.log('[trustera-sign-complete] Approver signed PDF email sent to:', approver.email)
+            console.log('[dr7trust-sign-complete] Approver signed PDF email sent to:', approver.email)
           } catch (approverEmailErr: any) {
-            console.warn('[trustera-sign-complete] Approver email failed for', approver.email, ':', approverEmailErr.message)
+            console.warn('[dr7trust-sign-complete] Approver email failed for', approver.email, ':', approverEmailErr.message)
           }
         }
       }
@@ -792,20 +792,20 @@ export const handler: Handler = async (event) => {
       })
 
       // Send a copy of signed PDF to owner via WhatsApp (DR7 contracts only)
-      // Uses Trustera's Green API (not DR7's) since DR7's Green API can't send to its own number
+      // Uses DR7 Trust's Green API (not DR7's) since DR7's Green API can't send to its own number
       if (doc.source && doc.source.startsWith('dr7')) {
         const ownerWhatsAppNumber = process.env.TRUSTERA_OWNER_WHATSAPP || '393457905205'
         try {
           const signerNamesList = allSigners.map((s: any) => s.signer_name).join(', ')
-          // Pass no source so it uses Trustera's Green API for the owner copy
+          // Pass no source so it uses DR7 Trust's Green API for the owner copy
           await sendWhatsAppPdf(ownerWhatsAppNumber, publicUrl, doc.name, signerNamesList)
-          console.log('[trustera-sign-complete] Owner WhatsApp copy sent to:', ownerWhatsAppNumber)
+          console.log('[dr7trust-sign-complete] Owner WhatsApp copy sent to:', ownerWhatsAppNumber)
         } catch (ownerWaErr: any) {
-          console.warn('[trustera-sign-complete] Owner WhatsApp copy failed:', ownerWaErr.message)
+          console.warn('[dr7trust-sign-complete] Owner WhatsApp copy failed:', ownerWaErr.message)
         }
       }
 
-      console.log('[trustera-sign-complete] All signers done for doc:', doc.id, '— signed PDF uploaded:', fileName)
+      console.log('[dr7trust-sign-complete] All signers done for doc:', doc.id, '— signed PDF uploaded:', fileName)
 
       return {
         statusCode: 200,
@@ -826,7 +826,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (docError) {
-      console.error('[trustera-sign-complete] Legacy doc lookup error:', docError.message)
+      console.error('[dr7trust-sign-complete] Legacy doc lookup error:', docError.message)
     }
 
     if (!doc) {
@@ -878,15 +878,15 @@ export const handler: Handler = async (event) => {
     // Upload signed PDF
     const fileName = `signed/${doc.id}_signed_${Date.now()}.pdf`
     const { error: uploadError } = await supabase.storage
-      .from('trustera')
+      .from('dr7trust')
       .upload(fileName, Buffer.from(signedPdfBytes), { contentType: 'application/pdf' })
 
     if (uploadError) {
-      console.error('[trustera-sign-complete] Upload failed (legacy):', uploadError.message)
+      console.error('[dr7trust-sign-complete] Upload failed (legacy):', uploadError.message)
       throw uploadError
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('trustera').getPublicUrl(fileName)
+    const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
 
     // Update document record
     const { error: docUpdateError } = await supabase
@@ -903,14 +903,14 @@ export const handler: Handler = async (event) => {
       .eq('id', doc.id)
 
     if (docUpdateError) {
-      console.error('[trustera-sign-complete] Doc update failed (legacy):', docUpdateError.message)
+      console.error('[dr7trust-sign-complete] Doc update failed (legacy):', docUpdateError.message)
       throw docUpdateError
     }
 
     // Log to signed_documents_log
     try {
       await supabase.from('signed_documents_log').insert({
-        source: 'trustera',
+        source: 'dr7trust',
         document_name: doc.name,
         signer_name: doc.signer_name,
         signer_email: doc.signer_email,
@@ -921,7 +921,7 @@ export const handler: Handler = async (event) => {
         metadata: { trustera_document_id: doc.id }
       })
     } catch (logErr: any) {
-      console.warn('[trustera-sign-complete] signed_documents_log insert failed (legacy):', logErr.message)
+      console.warn('[dr7trust-sign-complete] signed_documents_log insert failed (legacy):', logErr.message)
     }
 
     // Save marketing consent
@@ -945,7 +945,7 @@ export const handler: Handler = async (event) => {
       await sendSignedPdfEmail(doc.signer_email, doc.name, doc.signer_name, signedPdfBuffer, false)
     }
 
-    console.log('[trustera-sign-complete] Legacy signing complete for doc:', doc.id)
+    console.log('[dr7trust-sign-complete] Legacy signing complete for doc:', doc.id)
 
     return {
       statusCode: 200,
@@ -956,7 +956,7 @@ export const handler: Handler = async (event) => {
       })
     }
   } catch (error: any) {
-    console.error('[trustera-sign-complete] Unexpected error:', error)
+    console.error('[dr7trust-sign-complete] Unexpected error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore durante la firma' })

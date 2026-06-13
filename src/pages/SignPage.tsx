@@ -88,7 +88,7 @@ export default function SignPage() {
 
   async function loadData() {
     try {
-      const res = await fetch('/.netlify/functions/trustera-sign-get', {
+      const res = await fetch('/.netlify/functions/dr7trust-sign-get', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -179,7 +179,7 @@ export default function SignPage() {
     setStatus('otp_sending')
     setError('')
     try {
-      const res = await fetch('/.netlify/functions/trustera-sign-otp', {
+      const res = await fetch('/.netlify/functions/dr7trust-sign-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -202,7 +202,7 @@ export default function SignPage() {
     setStatus('otp_verifying')
     setError('')
     try {
-      const res = await fetch('/.netlify/functions/trustera-sign-verify', {
+      const res = await fetch('/.netlify/functions/dr7trust-sign-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, otp: otpCode })
@@ -219,7 +219,7 @@ export default function SignPage() {
   async function handleSign() {
     setError('')
     try {
-      const res = await fetch('/.netlify/functions/trustera-sign-complete', {
+      const res = await fetch('/.netlify/functions/dr7trust-sign-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -389,7 +389,7 @@ export default function SignPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 py-3 px-4 sm:py-4 sm:px-6 flex items-center justify-between gap-3">
-        <img src="/trustera-logo.jpeg" alt="Trustera" className="h-9 sm:h-12 w-auto" />
+        <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-9 sm:h-12 w-auto" />
         <span className="text-xs sm:text-sm text-gray-400 whitespace-nowrap">Firma Elettronica</span>
       </div>
 
@@ -550,7 +550,7 @@ export default function SignPage() {
                 className="mt-0.5 h-[18px] w-[18px] rounded-md border-gray-300 text-green-600 focus:ring-green-500 flex-shrink-0"
               />
               <span className="text-[13px] text-gray-600 leading-snug">
-                Desidero ricevere aggiornamenti via email, inclusi suggerimenti, consigli e le ultime novità di Trustera.
+                Desidero ricevere aggiornamenti via email, inclusi suggerimenti, consigli e le ultime novità di DR7 Trust.
               </span>
             </label>
 
@@ -560,7 +560,7 @@ export default function SignPage() {
               <a href="/terms" target="_blank" rel="noreferrer" className="text-green-600 underline hover:text-green-700">Termini e Condizioni</a>
               {' '}e l&apos;
               <a href="/privacy" target="_blank" rel="noreferrer" className="text-green-600 underline hover:text-green-700">Informativa sulla privacy</a>
-              {' '}di Trustera.
+              {' '}di DR7 Trust.
             </p>
 
             <button
@@ -603,7 +603,7 @@ export default function SignPage() {
       </div>
 
       <div className="text-center py-6 px-4 text-xs text-gray-400">
-        Trustera - Infrastructure for Digital Trust
+        DR7 Trust - Infrastructure for Digital Trust
       </div>
     </div>
   )

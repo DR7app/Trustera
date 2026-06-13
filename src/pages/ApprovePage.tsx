@@ -45,7 +45,7 @@ export default function ApprovePage() {
 
   async function fetchDocumentInfo() {
     try {
-      const res = await fetch(`/.netlify/functions/trustera-approve-get?token=${token}`)
+      const res = await fetch(`/.netlify/functions/dr7trust-approve-get?token=${token}`)
       const data = await res.json()
 
       if (!res.ok) {
@@ -79,7 +79,7 @@ export default function ApprovePage() {
     setStatus('submitting')
     setError('')
     try {
-      const res = await fetch('/.netlify/functions/trustera-approve', {
+      const res = await fetch('/.netlify/functions/dr7trust-approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, action, reason: reason || undefined })
@@ -212,8 +212,8 @@ export default function ApprovePage() {
           {/* Header */}
           <div className="bg-[#0d3d2a] px-6 sm:px-8 py-6 text-center">
             <img
-              src="/trustera-logo.jpeg"
-              alt="Trustera"
+              src="/dr7trust-logo.png"
+              alt="DR7 Trust"
               className="h-10 w-auto mx-auto mb-3 rounded"
               onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
@@ -333,7 +333,7 @@ export default function ApprovePage() {
 
           {/* Footer */}
           <div className="px-6 sm:px-8 pb-6 text-center">
-            <p className="text-xs text-gray-300 break-words">Trustera - Infrastructure for Digital Trust</p>
+            <p className="text-xs text-gray-300 break-words">DR7 Trust - Infrastructure for Digital Trust</p>
           </div>
         </div>
       </div>

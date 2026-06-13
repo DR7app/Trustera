@@ -34,7 +34,7 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const res = await fetch('/.netlify/functions/trustera-signup', {
+        const res = await fetch('/.netlify/functions/dr7trust-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, fullName })
@@ -85,8 +85,8 @@ export default function LoginPage() {
         <div className="flex justify-center mb-8">
           <Link to="/">
             <img
-              src="/trustera-logo.jpeg"
-              alt="Trustera"
+              src="/dr7trust-logo.png"
+              alt="DR7 Trust"
               className="h-14 w-auto"
             />
           </Link>
@@ -99,7 +99,7 @@ export default function LoginPage() {
         <p className="text-center text-[15px] text-gray-400 mb-8 leading-snug">
           {isSignUp
             ? 'Registrati per iniziare a firmare'
-            : 'Accedi al tuo account Trustera'}
+            : 'Accedi al tuo account DR7 Trust'}
         </p>
 
         {/* Form */}
@@ -219,7 +219,7 @@ export default function LoginPage() {
                   if (!forgotEmail) { toast.error('Inserisci la tua email'); return }
                   setForgotLoading(true)
                   try {
-                    const res = await fetch('/.netlify/functions/trustera-reset-password', {
+                    const res = await fetch('/.netlify/functions/dr7trust-reset-password', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ email: forgotEmail })
@@ -260,7 +260,7 @@ export default function LoginPage() {
               onClick={async () => {
                 setResendLoading(true)
                 try {
-                  const res = await fetch('/.netlify/functions/trustera-resend-verification', {
+                  const res = await fetch('/.netlify/functions/dr7trust-resend-verification', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -303,7 +303,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <p className="mt-8 text-[12px] text-gray-300 text-center">
-        Trustera - Infrastructure for Digital Trust
+        DR7 Trust - Infrastructure for Digital Trust
       </p>
     </div>
   )

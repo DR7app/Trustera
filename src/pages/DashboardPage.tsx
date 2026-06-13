@@ -304,9 +304,9 @@ export default function DashboardPage({ session }: { session: Session }) {
 
   async function getSignedUrl(url: string | null) {
     if (!url) return url
-    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/trustera\/(.+)/)
+    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/dr7trust\/(.+)/)
     if (!match) return url
-    const { data: signed } = await supabase.storage.from('trustera').createSignedUrl(match[1], 3600)
+    const { data: signed } = await supabase.storage.from('dr7trust').createSignedUrl(match[1], 3600)
     return signed?.signedUrl || url
   }
 
@@ -360,11 +360,11 @@ export default function DashboardPage({ session }: { session: Session }) {
       console.error('Error loading signed documents:', signedResult.error)
     } else {
       const externalDocs = (signedResult.data || []).filter((d: Document) => d.owner_id !== session.user.id)
-      const trusteraDocs = await processDocUrls(externalDocs)
+      const dr7trustDocs = await processDocUrls(externalDocs)
 
       let dr7Docs: Document[] = []
       try {
-        const res = await fetch('/.netlify/functions/trustera-get-dr7-documents', {
+        const res = await fetch('/.netlify/functions/dr7trust-get-dr7-documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: userEmail, accessToken: session.access_token })
@@ -380,9 +380,9 @@ export default function DashboardPage({ session }: { session: Session }) {
         console.warn('Could not fetch DR7 documents:', err)
       }
 
-      const seenUrls = new Set(trusteraDocs.map(d => d.signed_pdf_url).filter(Boolean))
+      const seenUrls = new Set(dr7trustDocs.map(d => d.signed_pdf_url).filter(Boolean))
       const uniqueDR7 = dr7Docs.filter(d => !d.signed_pdf_url || !seenUrls.has(d.signed_pdf_url))
-      setSignedByMeDocuments([...trusteraDocs, ...uniqueDR7])
+      setSignedByMeDocuments([...dr7trustDocs, ...uniqueDR7])
     }
 
     setDocsLoading(false)
@@ -567,10 +567,10 @@ export default function DashboardPage({ session }: { session: Session }) {
         if (selectedFile) {
           const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
           const { error: uploadError } = await supabase.storage
-            .from('trustera')
+            .from('dr7trust')
             .upload(fileName, selectedFile, { contentType: 'application/pdf' })
           if (uploadError) throw uploadError
-          publicUrl = supabase.storage.from('trustera').getPublicUrl(fileName).data.publicUrl
+          publicUrl = supabase.storage.from('dr7trust').getPublicUrl(fileName).data.publicUrl
           await supabase.from('trustera_documents').update({ pdf_url: publicUrl, name: selectedFile.name, draft_signers: validSigners }).eq('id', editingDraftId)
         } else {
           publicUrl = editingDraftPdfUrl
@@ -581,10 +581,10 @@ export default function DashboardPage({ session }: { session: Session }) {
         if (!selectedFile) { toast.error('Seleziona un documento'); return }
         const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
         const { error: uploadError } = await supabase.storage
-          .from('trustera')
+          .from('dr7trust')
           .upload(fileName, selectedFile, { contentType: 'application/pdf' })
         if (uploadError) throw uploadError
-        publicUrl = supabase.storage.from('trustera').getPublicUrl(fileName).data.publicUrl
+        publicUrl = supabase.storage.from('dr7trust').getPublicUrl(fileName).data.publicUrl
 
         const { data: doc, error: insertError } = await supabase
           .from('trustera_documents')
@@ -634,10 +634,10 @@ export default function DashboardPage({ session }: { session: Session }) {
         if (!selectedFile) { toast.error('Seleziona un documento'); return }
         const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
         const { error: uploadError } = await supabase.storage
-          .from('trustera')
+          .from('dr7trust')
           .upload(fileName, selectedFile, { contentType: 'application/pdf' })
         if (uploadError) throw uploadError
-        publicUrl = supabase.storage.from('trustera').getPublicUrl(fileName).data.publicUrl
+        publicUrl = supabase.storage.from('dr7trust').getPublicUrl(fileName).data.publicUrl
 
         if (editingDraftId) {
           await supabase.from('trustera_documents').update({ pdf_url: publicUrl, name: selectedFile.name, status: 'pending', draft_signers: null }).eq('id', editingDraftId)
@@ -658,7 +658,7 @@ export default function DashboardPage({ session }: { session: Session }) {
         }
       }
 
-      const res = await fetch('/.netlify/functions/trustera-send-signing', {
+      const res = await fetch('/.netlify/functions/dr7trust-send-signing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -704,10 +704,10 @@ export default function DashboardPage({ session }: { session: Session }) {
         if (selectedFile) {
           const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
           const { error: uploadError } = await supabase.storage
-            .from('trustera')
+            .from('dr7trust')
             .upload(fileName, selectedFile, { contentType: 'application/pdf' })
           if (uploadError) throw uploadError
-          updates.pdf_url = supabase.storage.from('trustera').getPublicUrl(fileName).data.publicUrl
+          updates.pdf_url = supabase.storage.from('dr7trust').getPublicUrl(fileName).data.publicUrl
           updates.name = selectedFile.name
         }
         const { error: updateError } = await supabase
@@ -718,11 +718,11 @@ export default function DashboardPage({ session }: { session: Session }) {
       } else {
         const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile!.name}`
         const { error: uploadError } = await supabase.storage
-          .from('trustera')
+          .from('dr7trust')
           .upload(fileName, selectedFile!, { contentType: 'application/pdf' })
         if (uploadError) throw uploadError
 
-        const { data: { publicUrl } } = supabase.storage.from('trustera').getPublicUrl(fileName)
+        const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
 
         const { error: insertError } = await supabase
           .from('trustera_documents')
@@ -769,11 +769,11 @@ export default function DashboardPage({ session }: { session: Session }) {
     try {
       const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
       const { error: uploadError } = await supabase.storage
-        .from('trustera')
+        .from('dr7trust')
         .upload(fileName, selectedFile, { contentType: 'application/pdf' })
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage.from('trustera').getPublicUrl(fileName)
+      const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
 
       const { error: insertError } = await supabase
         .from('trustera_documents')
@@ -804,7 +804,7 @@ export default function DashboardPage({ session }: { session: Session }) {
     try {
       // Save fields
       if (fields.length > 0) {
-        const res = await fetch('/.netlify/functions/trustera-save-fields', {
+        const res = await fetch('/.netlify/functions/dr7trust-save-fields', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -820,7 +820,7 @@ export default function DashboardPage({ session }: { session: Session }) {
       }
 
       // Send signing requests
-      const res = await fetch('/.netlify/functions/trustera-send-signing', {
+      const res = await fetch('/.netlify/functions/dr7trust-send-signing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1274,7 +1274,7 @@ export default function DashboardPage({ session }: { session: Session }) {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <img src="/trustera-logo.jpeg" alt="Trustera" className="h-10 sm:h-16 w-auto" />
+          <img src="/dr7trust-logo.png" alt="DR7 Trust" className="h-10 sm:h-16 w-auto" />
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <span className="text-sm text-gray-500 hidden sm:block truncate max-w-[200px]">{userName}</span>
             <button
@@ -1997,7 +1997,7 @@ export default function DashboardPage({ session }: { session: Session }) {
                     <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <label className="text-[13px] font-medium text-gray-500 uppercase tracking-wide">Approvatori</label>
+                    <label className="text-[11px] font-normal text-gray-400 uppercase tracking-wide">Approvatori</label>
                     <span className="text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{approverRows.length}</span>
                   </div>
                   <button
@@ -2042,7 +2042,7 @@ export default function DashboardPage({ session }: { session: Session }) {
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                       </button>
                     </div>
-                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Contatti Trustera</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Contatti DR7 Trust</p>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <svg className="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

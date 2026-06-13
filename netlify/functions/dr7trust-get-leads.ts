@@ -20,7 +20,7 @@ export const handler: Handler = async (event) => {
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
     if (authError || !user) {
-      console.error('[trustera-get-leads] Auth error:', authError?.message)
+      console.error('[dr7trust-get-leads] Auth error:', authError?.message)
       return { statusCode: 401, body: JSON.stringify({ error: 'Non autorizzato' }) }
     }
 
@@ -31,7 +31,7 @@ export const handler: Handler = async (event) => {
       .order('last_seen_at', { ascending: false })
 
     if (leadsError) {
-      console.error('[trustera-get-leads] Leads fetch error:', leadsError.message)
+      console.error('[dr7trust-get-leads] Leads fetch error:', leadsError.message)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel recupero dei lead' }) }
     }
 
@@ -40,7 +40,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ leads: leads || [] })
     }
   } catch (error: any) {
-    console.error('[trustera-get-leads] Unexpected error:', error)
+    console.error('[dr7trust-get-leads] Unexpected error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Errore interno' })

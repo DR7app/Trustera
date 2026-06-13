@@ -44,13 +44,13 @@ async function sendWhatsAppOtp(phone: string, otp: string): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chatId,
-        message: `Il tuo codice di verifica Trustera è: *${otp}*\n\nNon condividere questo codice con nessuno.\nScade tra 10 minuti.`
+        message: `Il tuo codice di verifica DR7 Trust è: *${otp}*\n\nNon condividere questo codice con nessuno.\nScade tra 10 minuti.`
       })
     })
     const data = await res.json()
     return !!data.idMessage
   } catch (err: any) {
-    console.warn('[trustera-sign-otp] WhatsApp send error:', err.message)
+    console.warn('[dr7trust-sign-otp] WhatsApp send error:', err.message)
     return false
   }
 }
@@ -71,7 +71,7 @@ function buildOtpEmailHtml(otp: string): string {
         <table role="presentation" width="400" cellpadding="0" cellspacing="0" style="max-width: 400px; background: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 32px 40px 0; text-align: center;">
-              <img src="https://dr7trust.com/trustera-logo.jpeg" alt="Trustera" width="120" style="height: auto; max-height: 48px;" />
+              <img src="https://dr7trust.com/dr7trust-logo.png" alt="DR7 Trust" width="120" style="height: auto; max-height: 48px;" />
             </td>
           </tr>
           <tr>
@@ -99,7 +99,7 @@ function buildOtpEmailHtml(otp: string): string {
           <tr>
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="margin: 0; color: #d1d5db; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 11px;">
-                Trustera - Infrastructure for Digital Trust<br/>
+                DR7 Trust - Infrastructure for Digital Trust<br/>
                 <a href="https://dr7trust.com" style="color: #16a34a; text-decoration: none;">www.dr7trust.com</a>
               </p>
             </td>
@@ -134,7 +134,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (signerError) {
-      console.error('[trustera-sign-otp] Signer lookup error:', signerError.message)
+      console.error('[dr7trust-sign-otp] Signer lookup error:', signerError.message)
     }
 
     if (signerRow) {
@@ -150,7 +150,7 @@ export const handler: Handler = async (event) => {
         .eq('id', signerRow.id)
 
       if (otpUpdateError) {
-        console.error('[trustera-sign-otp] OTP update failed (signers):', otpUpdateError.message)
+        console.error('[dr7trust-sign-otp] OTP update failed (signers):', otpUpdateError.message)
         return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel salvataggio del codice' }) }
       }
 
@@ -164,18 +164,18 @@ export const handler: Handler = async (event) => {
         if (sent) {
           channel = 'whatsapp'
         } else {
-          console.warn('[trustera-sign-otp] WhatsApp OTP failed, falling back to email for:', signerPhone)
+          console.warn('[dr7trust-sign-otp] WhatsApp OTP failed, falling back to email for:', signerPhone)
         }
       }
 
       if (channel === 'email') {
         if (signerRow.signer_email) {
           await resend.emails.send({
-            from: 'Trustera <info@dr7trust.com>',
+            from: 'DR7 Trust <info@dr7trust.com>',
             replyTo: 'info@dr7trust.com',
             to: signerRow.signer_email,
-            subject: 'Codice di verifica Trustera',
-            text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
+            subject: 'Codice di verifica DR7 Trust',
+            text: `Il tuo codice di verifica DR7 Trust: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
             html: buildOtpEmailHtml(otp)
           })
         } else if (signerPhone) {
@@ -204,7 +204,7 @@ export const handler: Handler = async (event) => {
       .maybeSingle()
 
     if (docError) {
-      console.error('[trustera-sign-otp] Document lookup error:', docError.message)
+      console.error('[dr7trust-sign-otp] Document lookup error:', docError.message)
     }
 
     if (!doc) {
@@ -223,7 +223,7 @@ export const handler: Handler = async (event) => {
       .eq('id', doc.id)
 
     if (otpUpdateError) {
-      console.error('[trustera-sign-otp] OTP update failed (documents):', otpUpdateError.message)
+      console.error('[dr7trust-sign-otp] OTP update failed (documents):', otpUpdateError.message)
       return { statusCode: 500, body: JSON.stringify({ error: 'Errore nel salvataggio del codice' }) }
     }
 
@@ -238,18 +238,18 @@ export const handler: Handler = async (event) => {
 
     if (channel === 'email') {
       await resend.emails.send({
-        from: 'Trustera <info@dr7trust.com>',
+        from: 'DR7 Trust <info@dr7trust.com>',
         replyTo: 'info@dr7trust.com',
         to: doc.signer_email,
-        subject: 'Codice di verifica Trustera',
-        text: `Il tuo codice di verifica Trustera: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nTrustera - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
+        subject: 'Codice di verifica DR7 Trust',
+        text: `Il tuo codice di verifica DR7 Trust: ${otp}\n\nScade tra 10 minuti. Non condividere questo codice.\n\nDR7 Trust - Infrastructure for Digital Trust\nhttps://dr7trust.com`,
         html: buildOtpEmailHtml(otp)
       })
     }
 
     return { statusCode: 200, body: JSON.stringify({ success: true, channel }) }
   } catch (error: any) {
-    console.error('[trustera-sign-otp] Error:', error)
+    console.error('[dr7trust-sign-otp] Error:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || "Errore nell'invio del codice" })
