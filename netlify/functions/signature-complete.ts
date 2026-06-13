@@ -768,7 +768,7 @@ export const handler: Handler = async (event) => {
         // Auto-send to CARGOS via admin panel (only after ALL signers done)
         if (allSignersDone && contract?.booking_id) {
             try {
-                const cargosRes = await fetch('https://admin.dr7empire.com/.netlify/functions/cargos-auto-trigger', {
+                const cargosRes = await fetch('https://platform.dr7ai.com/.netlify/functions/cargos-auto-trigger', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
