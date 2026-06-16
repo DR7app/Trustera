@@ -130,6 +130,28 @@ export const handler: Handler = async (event) => {
 
         let channel: 'whatsapp' | 'email' = 'email'
 
+        // Testo OTP: editabile da Admin > Messaggi di Sistema Pro (template
+        // 'pro_richiesta_otp', gruppo "Firma & Contratto"). Il signing app usa
+        // lo STESSO Supabase DR7, quindi lo legge direttamente. Variabili: {otp},
+        // {expiryMinutes}. Fallback al testo DR7 di default se il template manca
+        // o è disattivato — così l'OTP parte sempre, mai un messaggio rotto.
+        const otpFallback = `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
+        let otpMessage = otpFallback
+        try {
+            const { data: otpTpl } = await supabase
+                .from('system_messages')
+                .select('message_body, is_enabled')
+                .eq('message_key', 'pro_richiesta_otp')
+                .maybeSingle()
+            if (otpTpl && otpTpl.is_enabled !== false && otpTpl.message_body) {
+                otpMessage = String(otpTpl.message_body)
+                    .replace(/\{\{?\s*otp\s*\}?\}/gi, otp)
+                    .replace(/\{\{?\s*expiryMinutes\s*\}?\}/gi, String(OTP_EXPIRY_MINUTES))
+            }
+        } catch (tplErr) {
+            console.warn('[signature-send-otp] pro_richiesta_otp template fetch failed, using fallback:', tplErr)
+        }
+
         // Try WhatsApp first
         if (customerPhone && GREEN_API_INSTANCE_ID && GREEN_API_TOKEN) {
             try {
@@ -143,7 +165,7 @@ export const handler: Handler = async (event) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chatId: `${cleanPhone}@c.us`,
-                        message: `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
+                        message: otpMessage
                     })
                 })
 
