@@ -143,7 +143,7 @@ export const handler: Handler = async (event) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chatId: `${cleanPhone}@c.us`,
-                        message: `*MESSAGGIO AUTOMATICO GENERATO DA RENTORA*\n_Questo messaggio è stato inviato tramite il sistema automatizzato sviluppato da Rentora._\n\n*DR7 Empire - Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto e:\n\n*${otp}*\n\nIl codice scade tra ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice, ignora questo messaggio.\n\n_Se questo messaggio non era destinato a lei, oppure lo ha già ricevuto in precedenza, può semplicemente ignorarlo._`
+                        message: `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
                     })
                 })
 
@@ -163,16 +163,16 @@ export const handler: Handler = async (event) => {
         if (channel === 'email') {
             const apiKey = process.env.RESEND_API_KEY
             if (!apiKey) {
-                return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile inviare il codice OTP. Contatta DR7 Empire.' }) }
+                return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile inviare il codice OTP. Contatta DR7.' }) }
             }
 
             const resend = new Resend(apiKey)
 
             const { error: emailError } = await resend.emails.send({
-                from: 'DR7 Empire <info@dr7.app>',
+                from: 'DR7 <info@dr7.app>',
                 to: sigRequest.signer_email,
-                subject: 'Codice di Verifica - DR7 Empire',
-                text: `Il tuo codice di verifica DR7 Empire e: ${otp}\n\nIl codice scade tra ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice, ignora questa email.\n\nDubai rent 7.0 S.p.A. - www.dr7empire.com`,
+                subject: 'Codice di Verifica - DR7',
+                text: `Il tuo codice di verifica DR7 è: ${otp}\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDubai rent 7.0 S.p.A. - www.dr7.app`,
                 html: `
                     <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="text-align: center; margin-bottom: 30px;">

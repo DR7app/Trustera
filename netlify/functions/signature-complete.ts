@@ -665,7 +665,7 @@ export const handler: Handler = async (event) => {
                             chatId: `${cleanPhone}@c.us`,
                             urlFile: signedPdfUrl,
                             fileName: `${docIdentifier}_firmato.pdf`,
-                            caption: `${contract ? 'Contratto' : 'Documento'} ${docIdentifier} firmato da tutti i firmatari - DR7 Empire`
+                            caption: `${contract ? 'Contratto' : 'Documento'} ${docIdentifier} firmato da tutti i firmatari - DR7`
                         })
                     })
                     const waResult = await waResponse.json()
