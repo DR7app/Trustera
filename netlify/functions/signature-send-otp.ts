@@ -130,11 +130,29 @@ export const handler: Handler = async (event) => {
 
         let channel: 'whatsapp' | 'email' = 'email'
 
-        // Testo OTP firma (testo DR7 corretto). NB: NON leggere il template Pro
-        // 'pro_richiesta_otp': in Messaggi di Sistema Pro quella chiave è
-        // condivisa da più messaggi (es. "Notifica Admin: Nuovo Preventivo"),
-        // quindi pescare da lì manderebbe il messaggio sbagliato come OTP.
-        const otpMessage = `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
+        // Testo OTP firma: editabile da Admin > Messaggi di Sistema Pro nel
+        // template DEDICATO 'pro_firma_otp'. NB: NON usiamo 'pro_richiesta_otp'
+        // perché quella chiave è condivisa con "Notifica Admin: Nuovo Preventivo"
+        // e con il no-cauzione (manderebbe il messaggio sbagliato come OTP).
+        // Stesso Supabase DR7. Variabili: {otp}, {expiryMinutes}. Se il template
+        // manca o è disattivato si usa il testo DR7 di default — l'OTP parte
+        // SEMPRE, non si rompe mai.
+        const otpFallback = `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
+        let otpMessage = otpFallback
+        try {
+            const { data: otpTpl } = await supabase
+                .from('system_messages')
+                .select('message_body, is_enabled')
+                .eq('message_key', 'pro_firma_otp')
+                .maybeSingle()
+            if (otpTpl && otpTpl.is_enabled !== false && otpTpl.message_body) {
+                otpMessage = String(otpTpl.message_body)
+                    .replace(/\{\{?\s*otp\s*\}?\}/gi, otp)
+                    .replace(/\{\{?\s*expiryMinutes\s*\}?\}/gi, String(OTP_EXPIRY_MINUTES))
+            }
+        } catch (tplErr) {
+            console.warn('[signature-send-otp] pro_firma_otp template fetch failed, using fallback:', tplErr)
+        }
 
         // Try WhatsApp first
         if (customerPhone && GREEN_API_INSTANCE_ID && GREEN_API_TOKEN) {
