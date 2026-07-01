@@ -153,9 +153,13 @@ export const handler: Handler = async (event) => {
                 .order('updated_at', { ascending: false })
             const otpTpl = (otpRows || []).find((r: any) => r.is_enabled !== false && !!r.message_body)
             if (otpTpl) {
+                const signerFullName = String(sigRequest.signer_name || '').trim()
+                const signerFirstName = signerFullName.split(/\s+/)[0] || 'Cliente'
                 otpMessage = String(otpTpl.message_body)
                     .replace(/\{\{?\s*otp\s*\}?\}/gi, otp)
                     .replace(/\{\{?\s*expiryMinutes\s*\}?\}/gi, String(OTP_EXPIRY_MINUTES))
+                    .replace(/\{\{?\s*nome\s*\}?\}/gi, signerFirstName)
+                    .replace(/\{\{?\s*(customer_name|cliente)\s*\}?\}/gi, signerFullName || signerFirstName)
                 console.log(`[signature-send-otp] pro_firma_otp template used (rows=${otpRows?.length ?? 0})`)
             } else {
                 console.warn(`[signature-send-otp] No enabled+non-empty pro_firma_otp row (rows=${otpRows?.length ?? 0}) — using hardcoded fallback`)
