@@ -400,8 +400,9 @@ export default function FirmaPage() {
                                 integralmente il contenuto.
                             </p>
                             <p>
-                                Confermo che la firma viene apposta volontariamente tramite verifica OTP
-                                all'indirizzo email {signerEmail}.
+                                {otpChannel === 'whatsapp'
+                                    ? 'Confermo che la firma viene apposta volontariamente tramite verifica OTP via WhatsApp.'
+                                    : `Confermo che la firma viene apposta volontariamente tramite verifica OTP all'indirizzo email ${signerEmail}.`}
                             </p>
                         </div>
 
