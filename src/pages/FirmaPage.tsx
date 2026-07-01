@@ -179,33 +179,6 @@ export default function FirmaPage() {
         }
     }
 
-    function handleOtpChange(index: number, value: string) {
-        if (!/^\d*$/.test(value)) return
-        const newOtp = [...otp]
-        newOtp[index] = value.slice(-1)
-        setOtp(newOtp)
-        if (value && index < 5) {
-            otpRefs.current[index + 1]?.focus()
-        }
-    }
-
-    function handleOtpKeyDown(index: number, e: React.KeyboardEvent) {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpRefs.current[index - 1]?.focus()
-        }
-    }
-
-    function handleOtpPaste(e: React.ClipboardEvent) {
-        e.preventDefault()
-        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-        const newOtp = [...otp]
-        for (let i = 0; i < pasted.length; i++) {
-            newOtp[i] = pasted[i]
-        }
-        setOtp(newOtp)
-        const nextEmpty = newOtp.findIndex(d => !d)
-        otpRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus()
-    }
 
     if (status === 'loading') {
         return (
@@ -342,21 +315,22 @@ export default function FirmaPage() {
                                 : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
                         </p>
 
-                        <div className="flex justify-center gap-1.5 sm:gap-2 mb-6" onPaste={handleOtpPaste}>
-                            {otp.map((digit, i) => (
-                                <input
-                                    key={i}
-                                    ref={el => { otpRefs.current[i] = el }}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={e => handleOtpChange(i, e.target.value)}
-                                    onKeyDown={e => handleOtpKeyDown(i, e)}
-                                    className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-colors"
-                                    disabled={status === 'otp_verifying'}
-                                />
-                            ))}
+                        <div className="flex justify-center mb-6">
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                value={otp.join('')}
+                                onChange={e => {
+                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
+                                    setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
+                                }}
+                                placeholder="Inserisci il codice a 6 cifre"
+                                className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
+                                disabled={status === 'otp_verifying'}
+                                autoFocus
+                            />
                         </div>
 
                         {remainingAttempts < 5 && (
