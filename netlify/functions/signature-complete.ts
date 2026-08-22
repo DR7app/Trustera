@@ -619,6 +619,27 @@ export const handler: Handler = async (event) => {
             totalSigners = allSignerRequests.length
             allSignersDone = allSignerRequests.length > 0 && allSignerRequests.every((r: any) => r.status === 'signed')
             console.log(`[signature-complete] ${allSignerRequests.filter((r: any) => r.status === 'signed').length}/${totalSigners} signers done. All done: ${allSignersDone}`)
+        } else {
+            // 2026-08-22 (segnalazione direzione: "il cliente firma il documento
+            // da DR7 Trust e non riceve mai la copia firmata").
+            // Causa: questa lista si popolava SOLO per le firme legate a un
+            // contratto. Su un DOCUMENTO autonomo (contract_id null, caricato
+            // dalla tab DR7 Trust) restava vuota, quindi il ciclo di invio piu'
+            // sotto non faceva nemmeno un giro: il PDF non partiva a nessuno.
+            // Il log diceva pure "All 1 signers done — sending", ma non c'era
+            // nessun destinatario da scorrere.
+            // Su un documento autonomo il firmatario e' uno solo: se stesso.
+            allSignerRequests = [{
+                id: sigRequest.id,
+                status: 'signed',
+                signer_name: sigRequest.signer_name,
+                signer_email: sigRequest.signer_email,
+                signer_phone: sigRequest.signer_phone,
+                signed_pdf_url: signedPdfUrl,
+            }]
+            totalSigners = 1
+            allSignersDone = true
+            console.log(`[signature-complete] Documento autonomo: unico firmatario ${sigRequest.signer_name} (${sigRequest.signer_phone || 'senza telefono'})`)
         }
 
         // Send signed document via WhatsApp ONLY when ALL signers have completed
