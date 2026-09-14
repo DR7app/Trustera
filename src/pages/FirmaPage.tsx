@@ -82,6 +82,16 @@ export default function FirmaPage() {
     }
 
     async function handleRequestOtp() {
+        // Le condizioni si accettano PRIMA di ricevere il codice: da qui in
+        // poi il codice e' la firma e non ci sono altri passaggi.
+        if (!acceptedTerms) {
+            setError('Devi accettare i termini per procedere')
+            return
+        }
+        if (acceptedMarketing === null && existingMarketingConsent === null) {
+            setError('Seleziona Si o No per le offerte DR7 Trust')
+            return
+        }
         setStatus('otp_sending')
         setError('')
         try {
@@ -137,25 +147,22 @@ export default function FirmaPage() {
                 return
             }
 
+            // 14/09/2026 — il codice OTP FIRMA. Niente schermata di conferma
+            // dopo: il cliente ha gia' accettato i termini prima di chiedere
+            // il codice, e inserirlo e' l'atto di firma. Con la conferma in
+            // fondo molti si fermavano li' e il contratto restava non firmato.
             setStatus('signing')
+            await eseguiFirma()
         } catch {
             setError('Errore nella verifica del codice')
             setStatus('otp_sent')
         }
     }
 
-    async function handleSign() {
-        if (!acceptedTerms) {
-            setError('Devi accettare i termini per procedere')
-            return
-        }
-
-        // Only require a marketing answer if the customer hasn't already answered
-        if (acceptedMarketing === null && existingMarketingConsent === null) {
-            setError('Seleziona Si o No per le offerte DR7 Trust')
-            return
-        }
-
+    // Firma vera e propria. La chiama la verifica OTP appena il codice e'
+    // valido: le condizioni (termini + risposta marketing) sono gia' state
+    // date nel primo passo, qui non si chiede piu' niente.
+    async function eseguiFirma() {
         setError('')
         try {
             const res = await fetch('/.netlify/functions/signature-complete', {
@@ -282,90 +289,13 @@ export default function FirmaPage() {
                     </div>
                 )}
 
-                {/* Step 1: Request OTP */}
+                {/* Step 1: dichiarazione, consensi e richiesta OTP.
+                    14/09/2026 — tutto quello che il cliente deve accettare sta
+                    QUI, prima del codice: il codice OTP e' l'ultimo gesto e
+                    firma da solo. */}
                 {status === 'viewing' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-                        <h2 className="text-lg font-bold text-gray-800 mb-2">Firma il Documento</h2>
-                        <p className="text-gray-600 text-sm mb-6">
-                            Per procedere con la firma, invieremo un codice di verifica via WhatsApp o email.
-                        </p>
-                        <button
-                            onClick={handleRequestOtp}
-                            className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg"
-                        >
-                            Invia Codice di Verifica
-                        </button>
-                    </div>
-                )}
-
-                {status === 'otp_sending' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600">Invio codice di verifica...</p>
-                    </div>
-                )}
-
-                {/* Step 2: Enter OTP */}
-                {(status === 'otp_sent' || status === 'otp_verifying') && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Inserisci Codice OTP</h2>
-                        <p className="text-gray-600 text-sm mb-6 text-center">
-                            {otpChannel === 'whatsapp'
-                                ? 'Abbiamo inviato un codice a 6 cifre via WhatsApp.'
-                                : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
-                        </p>
-
-                        <div className="flex justify-center mb-6">
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                value={otp.join('')}
-                                onChange={e => {
-                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
-                                    setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
-                                }}
-                                placeholder="Inserisci il codice a 6 cifre"
-                                className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
-                                disabled={status === 'otp_verifying'}
-                                autoFocus
-                            />
-                        </div>
-
-                        {remainingAttempts < 5 && (
-                            <p className="text-center text-sm text-orange-600 mb-4">
-                                Tentativi rimanenti: {remainingAttempts}
-                            </p>
-                        )}
-
-                        <div className="flex flex-col gap-3 items-center">
-                            <button
-                                onClick={handleVerifyOtp}
-                                disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
-                                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full max-w-xs"
-                            >
-                                {status === 'otp_verifying' ? 'Verifica in corso...' : 'Verifica Codice'}
-                            </button>
-                            <button
-                                onClick={handleRequestOtp}
-                                disabled={status === 'otp_verifying'}
-                                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Non hai ricevuto il codice? Invia di nuovo
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 3: Confirm and Sign */}
-                {status === 'signing' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 text-center">Conferma Firma</h2>
-
-                        <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-6 text-sm text-green-700 text-center">
-                            Identita verificata con successo
-                        </div>
+                        <h2 className="text-lg font-bold text-gray-800 mb-4 text-center">Firma il Documento</h2>
 
                         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-gray-700">
                             <p className="mb-2">
@@ -374,9 +304,8 @@ export default function FirmaPage() {
                                 integralmente il contenuto.
                             </p>
                             <p>
-                                {otpChannel === 'whatsapp'
-                                    ? 'Confermo che la firma viene apposta volontariamente tramite verifica OTP via WhatsApp.'
-                                    : `Confermo che la firma viene apposta volontariamente tramite verifica OTP all'indirizzo email ${signerEmail}.`}
+                                Confermo che la firma viene apposta volontariamente tramite il codice di verifica
+                                {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp o email'}.
                             </p>
                         </div>
 
@@ -428,13 +357,105 @@ export default function FirmaPage() {
                             </div>
                         )}
 
+                        <p className="text-gray-600 text-sm mb-4 text-center">
+                            Riceverai un codice a 6 cifre: inserendolo il documento risulta firmato.
+                        </p>
                         <button
-                            onClick={handleSign}
+                            onClick={handleRequestOtp}
                             disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
                             className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
                         >
-                            Firma il Documento
+                            Invia Codice di Verifica
                         </button>
+                    </div>
+                )}
+
+                {status === 'otp_sending' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Invio codice di verifica...</p>
+                    </div>
+                )}
+
+                {/* Step 2: Enter OTP */}
+                {(status === 'otp_sent' || status === 'otp_verifying') && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Inserisci Codice OTP</h2>
+                        <p className="text-gray-600 text-sm mb-6 text-center">
+                            {otpChannel === 'whatsapp'
+                                ? 'Abbiamo inviato un codice a 6 cifre via WhatsApp.'
+                                : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
+                            <br />
+                            <span className="text-gray-500">Inserendolo firmi il documento.</span>
+                        </p>
+
+                        <div className="flex justify-center mb-6">
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                value={otp.join('')}
+                                onChange={e => {
+                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
+                                    setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
+                                }}
+                                placeholder="Inserisci il codice a 6 cifre"
+                                className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
+                                disabled={status === 'otp_verifying'}
+                                autoFocus
+                            />
+                        </div>
+
+                        {remainingAttempts < 5 && (
+                            <p className="text-center text-sm text-orange-600 mb-4">
+                                Tentativi rimanenti: {remainingAttempts}
+                            </p>
+                        )}
+
+                        <div className="flex flex-col gap-3 items-center">
+                            <button
+                                onClick={handleVerifyOtp}
+                                disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
+                                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full max-w-xs"
+                            >
+                                {status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento'}
+                            </button>
+                            <button
+                                onClick={handleRequestOtp}
+                                disabled={status === 'otp_verifying'}
+                                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Non hai ricevuto il codice? Invia di nuovo
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Firma in corso. Il passaggio di conferma che stava qui e'
+                    stato tolto il 14/09/2026: i termini si accettano prima del
+                    codice e l'OTP firma da solo. Resta l'attesa e, se qualcosa
+                    va storto dopo un codice valido, un solo bottone per
+                    riprovare senza rifare l'OTP. */}
+                {status === 'signing' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+                        {error ? (
+                            <>
+                                <h2 className="text-lg font-bold text-gray-800 mb-2">Firma non completata</h2>
+                                <p className="text-gray-600 text-sm mb-6">Il codice e' stato verificato. Riprova a completare la firma.</p>
+                                <button
+                                    onClick={eseguiFirma}
+                                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+                                >
+                                    Riprova la firma
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+                                <p className="text-gray-600">Firma del documento in corso...</p>
+                            </>
+                        )}
                     </div>
                 )}
 
