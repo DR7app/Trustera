@@ -181,6 +181,10 @@ export const handler: Handler = async (event) => {
         // colonne (1=sx, 2=centro, 3=dx) invece di farlo cadere nel box
         // "2° guidatore" del template.
         let signerRole: 'locatore' | '1_guidatore' | '2_guidatore' | 'fideiussore_1' | 'fideiussore_2' | 'fideiussore_3' | 'garante' = '1_guidatore'
+        // Contratto intestato a societa' / PA: la firma dell'azienda va nel
+        // riquadro in basso "Firma del garante o Firma, timbro aziendale",
+        // accanto a quella del garante — non nel box "1° guidatore".
+        let contrattoAziendale = false
         if (sigRequest.contract_id) {
             const { data: allRequests } = await supabase
                 .from('signature_requests')
@@ -238,6 +242,16 @@ export const handler: Handler = async (event) => {
                     const nomeClienteScheda = normName(bk?.booking_details?.customer?.fullName)
                     const firmatarioEIntestatario = !!sigName
                         && ((nomeCliente && sigName === nomeCliente) || (nomeClienteScheda && sigName === nomeClienteScheda))
+
+                    const clienteId = bk?.booking_details?.customer?.customerId || bk?.booking_details?.customer?.id
+                    if (clienteId) {
+                        const { data: cli } = await supabase
+                            .from('customers_extended')
+                            .select('tipo_cliente')
+                            .eq('id', clienteId)
+                            .maybeSingle()
+                        contrattoAziendale = cli?.tipo_cliente === 'azienda' || cli?.tipo_cliente === 'pubblica_amministrazione'
+                    }
 
                     let matchedFid: 1 | 2 | 3 | null = null
                     for (const row of fids) {
@@ -391,7 +405,24 @@ export const handler: Handler = async (event) => {
             // non ha secondo guidatore reale.
             let sealX: number
             let sealYPos: number
-            if (signerRole === '1_guidatore') {
+            // 17/09/2026 — CONTRATTO AZIENDALE: azienda e garanti affiancati
+            // nel riquadro in basso, da sinistra: azienda | garante 1 |
+            // garante 2 | garante 3 (passo 132 = sigillo 130 + 2 di aria,
+            // l'ultimo finisce a x=562, dentro il bordo a 567).
+            const colonnaBassoAziendale = (i: number) => 36 + i * 132
+            if (contrattoAziendale && signerRole === '1_guidatore') {
+                sealX = colonnaBassoAziendale(0)
+                sealYPos = 35
+            } else if (contrattoAziendale && (signerRole === 'fideiussore_1' || signerRole === 'garante')) {
+                sealX = colonnaBassoAziendale(1)
+                sealYPos = 35
+            } else if (contrattoAziendale && signerRole === 'fideiussore_2') {
+                sealX = colonnaBassoAziendale(2)
+                sealYPos = 35
+            } else if (contrattoAziendale && signerRole === 'fideiussore_3') {
+                sealX = colonnaBassoAziendale(3)
+                sealYPos = 35
+            } else if (signerRole === '1_guidatore') {
                 sealX = 230
                 sealYPos = 135
             } else if (signerRole === '2_guidatore') {
