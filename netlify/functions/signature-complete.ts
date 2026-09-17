@@ -225,6 +225,20 @@ export const handler: Handler = async (event) => {
                     const fids: any[] = Array.isArray(bk?.booking_details?.guarantors)
                         ? bk.booking_details.guarantors
                         : []
+                    // 17/09/2026 — CONTRATTO AZIENDALE. Il garante e' quasi
+                    // sempre il legale rappresentante della societa' che
+                    // noleggia: stesso telefono dell'azienda. Col fallback sul
+                    // telefono anche l'AZIENDA finiva classificata fideiussore,
+                    // e i due sigilli venivano stampati nello stesso riquadro,
+                    // uno sopra l'altro: il box "1° guidatore" restava vuoto e
+                    // sul contratto si vedeva una firma sola. Il telefono non
+                    // basta a dire chi e' chi quando e' lo stesso numero:
+                    // se il nome e' quello dell'intestatario, e' l'intestatario.
+                    const nomeCliente = normName(bk?.customer_name)
+                    const nomeClienteScheda = normName(bk?.booking_details?.customer?.fullName)
+                    const firmatarioEIntestatario = !!sigName
+                        && ((nomeCliente && sigName === nomeCliente) || (nomeClienteScheda && sigName === nomeClienteScheda))
+
                     let matchedFid: 1 | 2 | 3 | null = null
                     for (const row of fids) {
                         const n = Number(row?.index)
@@ -236,8 +250,9 @@ export const handler: Handler = async (event) => {
                             matchedFid = n as 1 | 2 | 3
                             break
                         }
-                        // Phone fallback se il name e' vuoto/typo
-                        if (sigPhone && fPhone && sigPhone === fPhone) {
+                        // Phone fallback se il name e' vuoto/typo — ma mai per
+                        // l'intestatario del contratto.
+                        if (!firmatarioEIntestatario && sigPhone && fPhone && sigPhone === fPhone) {
                             matchedFid = n as 1 | 2 | 3
                             break
                         }
@@ -250,9 +265,10 @@ export const handler: Handler = async (event) => {
                         const sdName = normName((sd?.name || '') + ' ' + (sd?.surname || ''))
                         const sdEmail = normEmail(sd?.email)
                         const sdPhone = normPhone(sd?.phone)
-                        if ((sigPhone && sdPhone && sigPhone === sdPhone)
-                            || (sigName && sdName && sigName === sdName)
-                            || (sigEmail && sdEmail && sigEmail === sdEmail)) {
+                        if (!firmatarioEIntestatario
+                            && ((sigPhone && sdPhone && sigPhone === sdPhone)
+                                || (sigName && sdName && sigName === sdName)
+                                || (sigEmail && sdEmail && sigEmail === sdEmail))) {
                             signerRole = '2_guidatore'
                         } else {
                             // Step 3: garante veicolo (cauzione_auto legacy)
@@ -260,9 +276,10 @@ export const handler: Handler = async (event) => {
                             const gvName = normName((gv?.nome || '') + ' ' + (gv?.cognome || ''))
                             const gvEmail = normEmail(gv?.email)
                             const gvPhone = normPhone(gv?.telefono || gv?.phone)
-                            if ((sigPhone && gvPhone && sigPhone === gvPhone)
-                                || (sigName && gvName && sigName === gvName)
-                                || (sigEmail && gvEmail && sigEmail === gvEmail)) {
+                            if (!firmatarioEIntestatario
+                                && ((sigPhone && gvPhone && sigPhone === gvPhone)
+                                    || (sigName && gvName && sigName === gvName)
+                                    || (sigEmail && gvEmail && sigEmail === gvEmail))) {
                                 signerRole = 'garante'
                             } else {
                                 // Step 4: default -> customer (1° guidatore)
