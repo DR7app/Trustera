@@ -210,7 +210,7 @@ export const handler: Handler = async (event) => {
                 from: 'DR7 <info@dr7.app>',
                 to: sigRequest.signer_email,
                 subject: 'Codice di Verifica - DR7',
-                text: `Il tuo codice di verifica DR7 è: ${otp}\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDubai rent 7.0 S.p.A. - www.dr7.app`,
+                text: `Il tuo codice di verifica DR7 è: ${otp}\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7 S.p.A. - www.dr7.app`,
                 html: `
                     <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="text-align: center; margin-bottom: 30px;">
@@ -227,7 +227,7 @@ export const handler: Handler = async (event) => {
                         <p style="text-align: center; color: #666; font-size: 13px;">Se non hai richiesto questo codice, ignora questa email.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
                         <p style="color: #999; font-size: 11px; text-align: center;">
-                            Dubai rent 7.0 S.p.A. - www.dr7empire.com
+                            DR7 S.p.A. - www.dr7empire.com
                         </p>
                     </div>
                 `

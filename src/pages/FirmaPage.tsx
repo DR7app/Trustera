@@ -477,7 +477,7 @@ export default function FirmaPage() {
 
             {/* Footer */}
             <div className="text-center py-6 px-4 text-xs text-gray-400 leading-relaxed">
-                <span className="block sm:inline">Dubai rent 7.0 S.p.A.</span>
+                <span className="block sm:inline">DR7 S.p.A.</span>
                 <span className="hidden sm:inline"> &middot; </span>
                 <span className="block sm:inline">Via del Fangario 25, 09122 Cagliari (CA)</span>
                 <span className="hidden sm:inline"> &middot; </span>
