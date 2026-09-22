@@ -243,14 +243,10 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // Fetch require_otp from the full document record
-    const { data: fullDoc } = await supabase
-      .from('trustera_documents')
-      .select('require_otp')
-      .eq('id', matchedDoc.id)
-      .single()
-
-    const requireOtp = fullDoc?.require_otp !== false
+    // Con OTP / Senza OTP: scelto al caricamento e salvato su ogni firmatario
+    // in attesa (trustera_documents non ha la colonna require_otp).
+    // Documenti in attesa da prima: OTP come sempre.
+    const requireOtp = draftSigners[0]?.requireOtp !== false
 
     // Send signing links to all signers
     await processSendSigners(matchedDoc.id, draftSigners, matchedDoc, senderName, requireOtp)

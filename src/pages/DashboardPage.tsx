@@ -2354,9 +2354,18 @@ export default function DashboardPage({ session }: { session: Session }) {
                       Con OTP
                     </button>
                   </div>
-                  {useOtp && (
+                  {useOtp ? (
+                    <div className="text-[12px] text-gray-400 mt-2 space-y-0.5">
+                      <p>Prima di firmare il firmatario riceve un codice sullo stesso canale scelto sopra:</p>
+                      {signerRows.map((s, i) => (
+                        <p key={i}>
+                          {s.name.trim() || `Firmatario ${i + 1}`}: {s.channel === 'whatsapp' ? 'codice su WhatsApp' : 'codice via email'}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
                     <p className="text-[12px] text-gray-400 mt-2">
-                      Il firmatario riceverà un codice OTP per verificare la sua identità prima di firmare.
+                      Il firmatario apre il link e firma direttamente, senza codice.
                     </p>
                   )}
                 </div>

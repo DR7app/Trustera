@@ -23,8 +23,8 @@ async function logAudit(documentId: string, action: string, email?: string, ip?:
 }
 
 function cleanPhoneForChatId(phone: string): string {
-  let cleaned = phone.replace(/[\s\-\(\)]/g, '')
-  if (cleaned.startsWith('+')) return cleaned.slice(1)
+  // solo cifre: i numeri incollati possono contenere caratteri invisibili (U+202D)
+  const cleaned = phone.replace(/\D/g, '')
   if (cleaned.startsWith('00')) return cleaned.slice(2)
   if (cleaned.startsWith('3') && cleaned.length === 10) return '39' + cleaned
   return cleaned

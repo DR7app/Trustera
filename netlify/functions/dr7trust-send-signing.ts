@@ -25,8 +25,8 @@ async function logAudit(documentId: string, action: string, email?: string, ip?:
 }
 
 function cleanPhone(phone: string): string {
-  let cleaned = phone.replace(/[\s\-\(\)]/g, '')
-  if (cleaned.startsWith('+')) return cleaned.slice(1)
+  // solo cifre: i numeri incollati possono contenere caratteri invisibili (U+202D)
+  const cleaned = phone.replace(/\D/g, '')
   if (cleaned.startsWith('00')) return cleaned.slice(2)
   if (cleaned.startsWith('3') && cleaned.length === 10) return '39' + cleaned
   return cleaned
@@ -399,7 +399,8 @@ export const handler: Handler = async (event) => {
           status: 'pending',
           approval_status: 'awaiting_approval',
           approvers: approverRecords,
-          draft_signers: signers,
+          // la scelta OTP viaggia con i firmatari fino all'approvazione
+          draft_signers: signers.map((s: any) => ({ ...s, requireOtp })),
         })
         .eq('id', documentId)
 
