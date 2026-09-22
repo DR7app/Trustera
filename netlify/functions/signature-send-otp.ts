@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { leggiFirmaConfig } from './utils/firmaConfig'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -61,6 +62,13 @@ export const handler: Handler = async (event) => {
 
         if (sigRequest.otp_attempts >= MAX_OTP_ATTEMPTS) {
             return { statusCode: 429, body: JSON.stringify({ error: 'Troppi tentativi. Richiedi un nuovo link di firma.' }) }
+        }
+
+        // Centralina Pro > Firma del contratto: con l'OTP spento si firma con
+        // il pulsante, il codice non serve e non si manda.
+        const firma = await leggiFirmaConfig(supabase, sigRequest)
+        if (!firma.otpAttivo) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Per questo documento non serve il codice: firma con il pulsante.', otpRequired: false }) }
         }
 
         // Generate 6-digit OTP
@@ -128,8 +136,6 @@ export const handler: Handler = async (event) => {
 
         console.log(`[signature-send-otp] Final customerPhone="${customerPhone}", GREEN_API_INSTANCE_ID=${GREEN_API_INSTANCE_ID ? 'set' : 'NOT SET'}, GREEN_API_TOKEN=${GREEN_API_TOKEN ? 'set' : 'NOT SET'}`)
 
-        let channel: 'whatsapp' | 'email' = 'email'
-
         // Testo OTP firma: editabile da Admin > Messaggi di Sistema Pro nel
         // template DEDICATO 'pro_firma_otp'. NB: NON usiamo 'pro_richiesta_otp'
         // perché quella chiave è condivisa con "Notifica Admin: Nuovo Preventivo"
@@ -168,10 +174,13 @@ export const handler: Handler = async (event) => {
             console.warn('[signature-send-otp] pro_firma_otp template fetch failed, using fallback:', tplErr)
         }
 
-        // Try WhatsApp first
-        if (customerPhone && GREEN_API_INSTANCE_ID && GREEN_API_TOKEN) {
+        // Canale scelto in Centralina Pro. Se quel canale non puo' partire
+        // (niente telefono, WhatsApp scollegato, niente email) si prova l'altro:
+        // il cliente con il link in mano deve poter firmare comunque.
+        async function inviaWhatsApp(): Promise<boolean> {
+            if (!customerPhone || !GREEN_API_INSTANCE_ID || !GREEN_API_TOKEN) return false
             try {
-                let cleanPhone = customerPhone.replace(/[\s\-\+\(\)]/g, '')
+                let cleanPhone = customerPhone.replace(/\D/g, '')
                 if (cleanPhone.startsWith('00')) cleanPhone = cleanPhone.substring(2)
                 if (cleanPhone.length === 10) cleanPhone = '39' + cleanPhone
 
@@ -187,25 +196,24 @@ export const handler: Handler = async (event) => {
 
                 const waResult = await waResponse.json()
                 if (waResponse.ok && waResult.idMessage) {
-                    channel = 'whatsapp'
                     console.log(`[signature-send-otp] OTP sent via WhatsApp to ${cleanPhone}:`, waResult.idMessage)
-                } else {
-                    console.warn('[signature-send-otp] WhatsApp send failed, falling back to email:', waResult)
+                    return true
                 }
+                console.warn('[signature-send-otp] WhatsApp send failed:', waResult)
             } catch (waErr: any) {
-                console.warn('[signature-send-otp] WhatsApp error, falling back to email:', waErr.message)
+                console.warn('[signature-send-otp] WhatsApp error:', waErr.message)
             }
+            return false
         }
 
-        // Fallback to email if WhatsApp didn't work
-        if (channel === 'email') {
+        let erroreEmail = ''
+        async function inviaEmail(): Promise<boolean> {
             const apiKey = process.env.RESEND_API_KEY
-            if (!apiKey) {
-                return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile inviare il codice OTP. Contatta DR7.' }) }
+            if (!apiKey || !sigRequest.signer_email) {
+                erroreEmail = !apiKey ? 'RESEND_API_KEY mancante' : 'email firmatario mancante'
+                return false
             }
-
             const resend = new Resend(apiKey)
-
             const { error: emailError } = await resend.emails.send({
                 from: 'DR7 <info@dr7.app>',
                 to: sigRequest.signer_email,
@@ -232,13 +240,26 @@ export const handler: Handler = async (event) => {
                     </div>
                 `
             })
-
             if (emailError) {
                 console.error('Resend OTP error:', emailError)
-                return { statusCode: 500, body: JSON.stringify({ error: 'Errore nell\'invio del codice OTP', details: emailError.message }) }
+                erroreEmail = emailError.message
+                return false
             }
-
             console.log(`[signature-send-otp] OTP sent via email to ${sigRequest.signer_email}`)
+            return true
+        }
+
+        const ordine: ('whatsapp' | 'email')[] = firma.canale === 'email' ? ['email', 'whatsapp'] : ['whatsapp', 'email']
+        let channel: 'whatsapp' | 'email' | null = null
+        for (const c of ordine) {
+            const ok = c === 'whatsapp' ? await inviaWhatsApp() : await inviaEmail()
+            if (ok) { channel = c; break }
+        }
+        if (!channel) {
+            return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile inviare il codice OTP. Contatta DR7.', details: erroreEmail || undefined }) }
+        }
+        if (channel !== firma.canale) {
+            console.warn(`[signature-send-otp] Canale scelto ${firma.canale} non disponibile, inviato via ${channel}`)
         }
 
         // Log audit

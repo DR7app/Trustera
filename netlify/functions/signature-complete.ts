@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { leggiFirmaConfig } from './utils/firmaConfig'
 import crypto from 'crypto'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
@@ -21,7 +22,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { token, signatureImage, signatureImage2, marketingConsent } = JSON.parse(event.body || '{}')
+        const { token, signatureImage, signatureImage2, marketingConsent, confermaFirma } = JSON.parse(event.body || '{}')
 
         if (!token) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token richiesto' }) }
@@ -46,8 +47,18 @@ export const handler: Handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Il documento e gia stato firmato' }) }
         }
 
+        // Con l'OTP acceso (Centralina Pro > Firma del contratto) si firma solo
+        // dopo il codice. Con l'OTP spento la firma e' il pulsante "Firma il
+        // Contratto": lo decide il server rileggendo la config, non la pagina,
+        // cosi' nessuno salta il codice quando e' richiesto.
+        let firmaConPulsante = false
         if (sigRequest.status !== 'otp_verified') {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Verifica OTP richiesta prima della firma' }) }
+            const firma = await leggiFirmaConfig(supabase, sigRequest)
+            const statoFirmabile = sigRequest.status === 'pending' || sigRequest.status === 'otp_sent'
+            if (firma.otpAttivo || confermaFirma !== true || !statoFirmabile) {
+                return { statusCode: 400, body: JSON.stringify({ error: 'Verifica OTP richiesta prima della firma' }) }
+            }
+            firmaConPulsante = true
         }
 
         if (new Date(sigRequest.token_expires_at) < new Date()) {
@@ -56,6 +67,21 @@ export const handler: Handler = async (event) => {
                 .update({ status: 'expired', updated_at: new Date().toISOString() })
                 .eq('id', sigRequest.id)
             return { statusCode: 410, body: JSON.stringify({ error: 'Il link di firma e scaduto' }) }
+        }
+
+        if (firmaConPulsante) {
+            await supabase.from('signature_audit_trail').insert({
+                signature_request_id: sigRequest.id,
+                event_type: 'firma_confermata',
+                event_description: `Firma confermata con il pulsante "Firma il Contratto" da ${sigRequest.signer_name || sigRequest.signer_email} (OTP non richiesto)`,
+                ip_address: ipAddress,
+                user_agent: userAgent,
+                metadata: { metodo: 'pulsante', confermata_at: new Date().toISOString() }
+            })
+            await supabase
+                .from('signature_requests')
+                .update({ signer_ip: ipAddress, signer_user_agent: userAgent, updated_at: new Date().toISOString() })
+                .eq('id', sigRequest.id)
         }
 
         // Look up which channel was used for OTP (WhatsApp or email) from audit trail
@@ -592,6 +618,7 @@ export const handler: Handler = async (event) => {
                 signed_pdf_hash: signedPdfHash,
                 signed_pdf_url: signedPdfUrl,
                 document_identifier: docIdentifier,
+                metodo_firma: firmaConPulsante ? 'pulsante' : 'otp',
                 marketing_consent: !!marketingConsent
             }
         })

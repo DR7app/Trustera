@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { leggiFirmaConfig } from './utils/firmaConfig'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -22,7 +23,7 @@ export const handler: Handler = async (event) => {
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, contract_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name')
+            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name')
             .eq('token', token)
             .single()
 
@@ -160,6 +161,9 @@ export const handler: Handler = async (event) => {
             return url
         }
 
+        // OTP o pulsante, e su quale canale: deciso in Centralina Pro.
+        const firma = await leggiFirmaConfig(supabase, sigRequest)
+
         const contractPdfUrl = contract ? await getSignedUrl(contract.pdf_url) : await getSignedUrl(sigRequest.document_url)
         const signedPdfUrl = await getSignedUrl(sigRequest.signed_pdf_url)
 
@@ -173,6 +177,8 @@ export const handler: Handler = async (event) => {
                 signedAt: sigRequest.signed_at,
                 secondDriverName,
                 existingMarketingConsent,
+                otpRequired: firma.otpAttivo,
+                otpChannel: firma.canale,
                 contract: contract ? {
                     contractNumber: contract.contract_number,
                     pdfUrl: contractPdfUrl,

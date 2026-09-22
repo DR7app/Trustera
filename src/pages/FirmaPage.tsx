@@ -28,6 +28,9 @@ export default function FirmaPage() {
     const [existingMarketingConsent, setExistingMarketingConsent] = useState<boolean | null>(null)
     const [showMarketingInfo, setShowMarketingInfo] = useState(false)
     const [otpChannel, setOtpChannel] = useState<'whatsapp' | 'email' | null>(null)
+    // Centralina Pro > Firma del contratto: false = si firma con il pulsante,
+    // senza codice.
+    const [otpRequired, setOtpRequired] = useState(true)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
     useEffect(() => {
@@ -59,6 +62,7 @@ export default function FirmaPage() {
             setSignerEmail(data.signerEmail)
             setContract(data.contract)
             if (data.otpChannel) setOtpChannel(data.otpChannel)
+            setOtpRequired(data.otpRequired !== false)
 
             // If customer already consented to marketing, pre-fill and skip the question
             if (data.existingMarketingConsent === true) {
@@ -81,17 +85,30 @@ export default function FirmaPage() {
         }
     }
 
-    async function handleRequestOtp() {
-        // Le condizioni si accettano PRIMA di ricevere il codice: da qui in
-        // poi il codice e' la firma e non ci sono altri passaggi.
+    function consensiDati(): boolean {
         if (!acceptedTerms) {
             setError('Devi accettare i termini per procedere')
-            return
+            return false
         }
         if (acceptedMarketing === null && existingMarketingConsent === null) {
             setError('Seleziona Si o No per le offerte DR7 Trust')
-            return
+            return false
         }
+        return true
+    }
+
+    // OTP spento in Centralina Pro: il pulsante "Firma il Contratto" e' l'atto
+    // di firma. Il server ricontrolla la config prima di accettarlo.
+    async function handleFirmaConPulsante() {
+        if (!consensiDati()) return
+        setStatus('signing')
+        await eseguiFirma(true)
+    }
+
+    async function handleRequestOtp() {
+        // Le condizioni si accettano PRIMA di ricevere il codice: da qui in
+        // poi il codice e' la firma e non ci sono altri passaggi.
+        if (!consensiDati()) return
         setStatus('otp_sending')
         setError('')
         try {
@@ -103,6 +120,9 @@ export default function FirmaPage() {
 
             if (!res.ok) {
                 const err = await res.json()
+                // La config e' cambiata dopo l'apertura della pagina: si passa
+                // al pulsante invece di lasciare il cliente bloccato.
+                if (err.otpRequired === false) setOtpRequired(false)
                 setError(err.error)
                 setStatus('viewing')
                 return
@@ -162,13 +182,13 @@ export default function FirmaPage() {
     // Firma vera e propria. La chiama la verifica OTP appena il codice e'
     // valido: le condizioni (termini + risposta marketing) sono gia' state
     // date nel primo passo, qui non si chiede piu' niente.
-    async function eseguiFirma() {
+    async function eseguiFirma(conPulsante = false) {
         setError('')
         try {
             const res = await fetch('/.netlify/functions/signature-complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, marketingConsent: acceptedMarketing })
+                body: JSON.stringify({ token, marketingConsent: acceptedMarketing, confermaFirma: conPulsante })
             })
 
             if (!res.ok) {
@@ -304,8 +324,14 @@ export default function FirmaPage() {
                                 integralmente il contenuto.
                             </p>
                             <p>
-                                Confermo che la firma viene apposta volontariamente tramite il codice di verifica
-                                {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp o email'}.
+                                {otpRequired ? (
+                                    <>
+                                        Confermo che la firma viene apposta volontariamente tramite il codice di verifica
+                                        {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
+                                    </>
+                                ) : (
+                                    <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma il Contratto".</>
+                                )}
                             </p>
                         </div>
 
@@ -357,16 +383,35 @@ export default function FirmaPage() {
                             </div>
                         )}
 
-                        <p className="text-gray-600 text-sm mb-4 text-center">
-                            Riceverai un codice a 6 cifre: inserendolo il documento risulta firmato.
-                        </p>
-                        <button
-                            onClick={handleRequestOtp}
-                            disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
-                        >
-                            Invia Codice di Verifica
-                        </button>
+                        {otpRequired ? (
+                            <>
+                                <p className="text-gray-600 text-sm mb-4 text-center">
+                                    {otpChannel === 'email'
+                                        ? `Riceverai un codice a 6 cifre via email a ${signerEmail}: inserendolo il documento risulta firmato.`
+                                        : 'Riceverai un codice a 6 cifre via WhatsApp: inserendolo il documento risulta firmato.'}
+                                </p>
+                                <button
+                                    onClick={handleRequestOtp}
+                                    disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
+                                    className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
+                                >
+                                    Invia Codice di Verifica
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-gray-600 text-sm mb-4 text-center">
+                                    Premendo il pulsante il documento risulta firmato.
+                                </p>
+                                <button
+                                    onClick={handleFirmaConPulsante}
+                                    disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
+                                    className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
+                                >
+                                    Firma il Contratto
+                                </button>
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -442,9 +487,11 @@ export default function FirmaPage() {
                         {error ? (
                             <>
                                 <h2 className="text-lg font-bold text-gray-800 mb-2">Firma non completata</h2>
-                                <p className="text-gray-600 text-sm mb-6">Il codice e' stato verificato. Riprova a completare la firma.</p>
+                                <p className="text-gray-600 text-sm mb-6">
+                                    {otpRequired ? "Il codice e' stato verificato. Riprova a completare la firma." : 'Riprova a completare la firma.'}
+                                </p>
                                 <button
-                                    onClick={eseguiFirma}
+                                    onClick={() => eseguiFirma(!otpRequired)}
                                     className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
                                 >
                                     Riprova la firma
