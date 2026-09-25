@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { controllaDispositivo } from './utils/dispositivo'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -13,7 +14,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { token, otp } = JSON.parse(event.body || '{}')
+        const { token, otp, deviceId } = JSON.parse(event.body || '{}')
 
         if (!token || !otp) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token e codice OTP richiesti' }) }
@@ -29,6 +30,10 @@ export const handler: Handler = async (event) => {
         if (error || !sigRequest) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
+
+        // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
+        const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
+        if (bloccoDispositivo) return bloccoDispositivo
 
         // Check token expiry
         if (new Date(sigRequest.token_expires_at) < new Date()) {

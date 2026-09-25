@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
-type SigningStatus = 'loading' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'error'
+type SigningStatus = 'loading' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
 
 interface ContractInfo {
     contractNumber: string
@@ -10,6 +10,26 @@ interface ContractInfo {
     vehicleName: string
     rentalStartDate: string
     rentalEndDate: string
+}
+
+// 25/09/2026: il link di firma e' personale. Questo identificativo casuale
+// resta nel browser e va con ogni chiamata: il server lega il link al primo
+// dispositivo che lo apre e respinge gli altri (netlify/functions/utils/dispositivo.ts).
+// Senza memoria del browser vale finche' la pagina resta aperta.
+const CHIAVE_DISPOSITIVO = 'dr7trust_dispositivo'
+let dispositivoInMemoria = ''
+function idDispositivo(): string {
+    try {
+        const salvato = localStorage.getItem(CHIAVE_DISPOSITIVO)
+        if (salvato) return salvato
+    } catch { /* memoria del browser non disponibile */ }
+    if (!dispositivoInMemoria) {
+        dispositivoInMemoria = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+    }
+    try { localStorage.setItem(CHIAVE_DISPOSITIVO, dispositivoInMemoria) } catch { /* idem */ }
+    return dispositivoInMemoria
 }
 
 export default function FirmaPage() {
@@ -42,7 +62,7 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ token, deviceId: idDispositivo() })
             })
 
             if (res.status === 410) {
@@ -52,6 +72,7 @@ export default function FirmaPage() {
 
             if (!res.ok) {
                 const err = await res.json()
+                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 setError(err.error || 'Errore nel caricamento')
                 setStatus('error')
                 return
@@ -115,11 +136,12 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ token, deviceId: idDispositivo() })
             })
 
             if (!res.ok) {
                 const err = await res.json()
+                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 // La config e' cambiata dopo l'apertura della pagina: si passa
                 // al pulsante invece di lasciare il cliente bloccato.
                 if (err.otpRequired === false) setOtpRequired(false)
@@ -153,12 +175,13 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, otp: otpCode })
+                body: JSON.stringify({ token, otp: otpCode, deviceId: idDispositivo() })
             })
 
             const data = await res.json()
 
             if (!res.ok) {
+                if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 setError(data.error)
                 if (data.remainingAttempts !== undefined) {
                     setRemainingAttempts(data.remainingAttempts)
@@ -188,11 +211,12 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, marketingConsent: acceptedMarketing, confermaFirma: conPulsante })
+                body: JSON.stringify({ token, marketingConsent: acceptedMarketing, confermaFirma: conPulsante, deviceId: idDispositivo() })
             })
 
             if (!res.ok) {
                 const err = await res.json()
+                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 setError(err.error)
                 return
             }
@@ -225,6 +249,25 @@ export default function FirmaPage() {
                     <div className="text-5xl mb-4">&#8987;</div>
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">Link Scaduto</h1>
                     <p className="text-gray-600">Il link di firma e scaduto. Contatta il mittente per ricevere un nuovo link.</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (status === 'bloccato') {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+                    <svg viewBox="0 0 24 24" className="h-12 w-12 mx-auto mb-4 text-yellow-600" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                        <rect x="5" y="11" width="14" height="10" rx="2" />
+                        <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+                    </svg>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Link personale</h1>
+                    <p className="text-gray-600">
+                        Questo link di firma e' gia' stato aperto su un altro dispositivo. Puo' essere usato
+                        solo da chi lo ha ricevuto, sul dispositivo con cui lo ha aperto la prima volta.
+                    </p>
+                    <p className="text-gray-600 mt-3">Se sei tu il destinatario, contatta DR7 per ricevere un nuovo link.</p>
                 </div>
             </div>
         )
