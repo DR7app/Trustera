@@ -14,16 +14,13 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * Cosi' anche un codice OTP passato a un altro non serve: sul suo telefono il
  * link non si apre.
  *
- * Nessuna eccezione: per firmare da un altro dispositivo lo staff rimanda il
- * link dal gestionale (signature-init crea un token nuovo e annulla il vecchio).
+ * 25/09/2026: il blocco e' stato tolto su richiesta della direzione (il
+ * garante restava fuori). Il primo dispositivo viene ancora associato e gli
+ * accessi da altri dispositivi finiscono nell'audit trail, ma nessuno e'
+ * respinto: chiunque apra il link puo' firmare.
  */
 
 const FORMATO = /^[A-Za-z0-9-]{20,64}$/
-
-export const MESSAGGIO_ALTRO_DISPOSITIVO =
-    'Questo link di firma e\' personale ed e\' gia\' stato aperto su un altro dispositivo. ' +
-    'Puo\' essere usato solo da chi lo ha ricevuto, sul dispositivo con cui lo ha aperto la prima volta. ' +
-    'Se sei tu il destinatario, contatta DR7 per ricevere un nuovo link.'
 
 type Risposta = { statusCode: number; body: string }
 
@@ -40,13 +37,11 @@ export async function controllaDispositivo(
     const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown'
     const userAgent = event.headers['user-agent'] || 'unknown'
 
-    if (typeof deviceId !== 'string' || !FORMATO.test(deviceId)) {
-        // Pagina vecchia rimasta in cache o browser senza memoria: si ricarica.
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Ricarica la pagina per continuare.', code: 'dispositivo_mancante' }),
-        }
-    }
+    // 25/09/2026 (direzione): il legame al dispositivo NON blocca piu'. Il
+    // garante non riusciva a firmare perche' il link era gia' stato aperto su
+    // un altro telefono. Ora chiunque apra il link puo' vedere e firmare; il
+    // dispositivo resta solo annotato nell'audit trail.
+    if (typeof deviceId !== 'string' || !FORMATO.test(deviceId)) return null
 
     let legato = sigRequest.device_id || null
     if (!legato) {
@@ -81,12 +76,9 @@ export async function controllaDispositivo(
     await supabase.from('signature_audit_trail').insert({
         signature_request_id: sigRequest.id,
         event_type: 'accesso_altro_dispositivo',
-        event_description: `Tentativo di aprire il link di firma di ${sigRequest.signer_name || 'firmatario'} da un altro dispositivo: respinto`,
+        event_description: `Link di firma di ${sigRequest.signer_name || 'firmatario'} aperto da un altro dispositivo: consentito`,
         ip_address: ip,
         user_agent: userAgent,
     })
-    return {
-        statusCode: 403,
-        body: JSON.stringify({ error: MESSAGGIO_ALTRO_DISPOSITIVO, code: 'altro_dispositivo' }),
-    }
+    return null
 }
