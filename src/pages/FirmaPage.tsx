@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
-type SigningStatus = 'loading' | 'verifica' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
+type SigningStatus = 'loading' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'error'
 
 interface ContractInfo {
     contractNumber: string
@@ -10,64 +10,6 @@ interface ContractInfo {
     vehicleName: string
     rentalStartDate: string
     rentalEndDate: string
-}
-
-// 25/09/2026: il link di firma e' personale. Questo identificativo casuale
-// resta nel browser e va con ogni chiamata: il server lega il link al primo
-// dispositivo che lo apre e respinge gli altri (netlify/functions/utils/dispositivo.ts).
-// Senza memoria del browser vale finche' la pagina resta aperta.
-const CHIAVE_DISPOSITIVO = 'dr7trust_dispositivo'
-let dispositivoInMemoria = ''
-function idDispositivo(): string {
-    try {
-        const salvato = localStorage.getItem(CHIAVE_DISPOSITIVO)
-        if (salvato) return salvato
-    } catch { /* memoria del browser non disponibile */ }
-    if (!dispositivoInMemoria) {
-        dispositivoInMemoria = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
-    }
-    try { localStorage.setItem(CHIAVE_DISPOSITIVO, dispositivoInMemoria) } catch { /* idem */ }
-    return dispositivoInMemoria
-}
-
-// 25/09/2026: posizione del dispositivo (Geolocation API del browser), chiesta
-// all'apertura e subito prima della firma. Il server la registra cosi' com'e'
-// (netlify/functions/signature-posizione.ts). Rifiutarla non blocca la firma,
-// salvo che Centralina Pro la renda obbligatoria.
-type FasePosizione = 'apertura' | 'firma'
-
-function leggiPosizione(): Promise<Record<string, unknown>> {
-    return new Promise(resolve => {
-        if (typeof navigator === 'undefined' || !navigator.geolocation) {
-            resolve({ esito: 'non_supportata' })
-            return
-        }
-        navigator.geolocation.getCurrentPosition(
-            pos => resolve({
-                esito: 'concessa',
-                latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude,
-                accuracy: pos.coords.accuracy,
-                timestamp: pos.timestamp,
-            }),
-            err => resolve({
-                esito: err.code === err.PERMISSION_DENIED ? 'negata' : err.code === err.TIMEOUT ? 'timeout' : 'non_disponibile',
-                errore: err.message,
-            }),
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-        )
-    })
-}
-
-async function statoPermessoPosizione(): Promise<string | null> {
-    try {
-        const p = await navigator.permissions?.query({ name: 'geolocation' as PermissionName })
-        return p?.state || null
-    } catch {
-        return null
-    }
 }
 
 export default function FirmaPage() {
@@ -89,16 +31,7 @@ export default function FirmaPage() {
     // Centralina Pro > Firma del contratto: false = si firma con il pulsante,
     // senza codice.
     const [otpRequired, setOtpRequired] = useState(true)
-    // Centralina Pro > Firma del contratto: posizione obbligatoria per firmare.
-    const [gpsRequired, setGpsRequired] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
-    // 25/09/2026: il contratto si apre solo dopo il codice inviato al recapito
-    // registrato (utils/dispositivo.ts). modoVerifica = il codice in corso
-    // serve ad aprire il contratto, non a firmare.
-    const [modoVerifica, setModoVerifica] = useState(false)
-    const [cambioDispositivo, setCambioDispositivo] = useState(false)
-    const [destinatario, setDestinatario] = useState('')
-    const [identitaVerificata, setIdentitaVerificata] = useState(false)
 
     useEffect(() => {
         if (token) loadSigningData()
@@ -109,7 +42,7 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-get', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, deviceId: idDispositivo() })
+                body: JSON.stringify({ token })
             })
 
             if (res.status === 410) {
@@ -119,30 +52,17 @@ export default function FirmaPage() {
 
             if (!res.ok) {
                 const err = await res.json()
-                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 setError(err.error || 'Errore nel caricamento')
                 setStatus('error')
                 return
             }
 
             const data = await res.json()
-            if (data.verificaIdentita) {
-                if (data.otpChannel) setOtpChannel(data.otpChannel)
-                setCambioDispositivo(data.cambioDispositivo === true)
-                setModoVerifica(true)
-                setStatus('verifica')
-                return
-            }
-            setModoVerifica(false)
             setSignerName(data.signerName)
             setSignerEmail(data.signerEmail)
             setContract(data.contract)
             if (data.otpChannel) setOtpChannel(data.otpChannel)
-            // Codice gia' verificato (all'apertura): la firma e' il pulsante.
-            const giaVerificato = data.status === 'otp_verified'
-            setIdentitaVerificata(giaVerificato)
-            setOtpRequired(data.otpRequired !== false && !giaVerificato)
-            setGpsRequired(data.gpsRequired === true)
+            setOtpRequired(data.otpRequired !== false)
 
             // If customer already consented to marketing, pre-fill and skip the question
             if (data.existingMarketingConsent === true) {
@@ -158,55 +78,10 @@ export default function FirmaPage() {
                 setStatus('signed')
             } else {
                 setStatus('viewing')
-                // Prima acquisizione della posizione (apertura del documento).
-                acquisisciPosizione('apertura')
             }
         } catch {
             setError('Impossibile caricare i dati del documento')
             setStatus('error')
-        }
-    }
-
-    // Chiede la posizione al browser e la manda al server. Non lancia mai
-    // errori: una posizione mancante non deve rompere la firma.
-    async function acquisisciPosizione(fase: FasePosizione): Promise<string> {
-        const [posizione, permessoStato] = await Promise.all([leggiPosizione(), statoPermessoPosizione()])
-        try {
-            await fetch('/.netlify/functions/signature-posizione', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, deviceId: idDispositivo(), fase, permessoStato, ...posizione })
-            })
-        } catch { /* la firma va avanti lo stesso */ }
-        return String(posizione.esito || '')
-    }
-
-    // Codice per aprire il contratto: parte al recapito registrato, che
-    // sceglie il server. Nessun consenso da dare qui: il contratto non si vede.
-    async function handleInviaCodiceVerifica() {
-        setStatus('otp_sending')
-        setError('')
-        try {
-            const res = await fetch('/.netlify/functions/signature-send-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, deviceId: idDispositivo() })
-            })
-            const data = await res.json().catch(() => ({}))
-            if (!res.ok) {
-                if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
-                if (res.status === 410) { setStatus('expired'); return }
-                setError(data.error || 'Errore nell\'invio del codice')
-                setStatus('verifica')
-                return
-            }
-            if (data.channel) setOtpChannel(data.channel)
-            setDestinatario(data.destinatario || '')
-            setStatus('otp_sent')
-            setOtp(['', '', '', '', '', ''])
-        } catch {
-            setError('Errore nell\'invio del codice')
-            setStatus('verifica')
         }
     }
 
@@ -227,8 +102,6 @@ export default function FirmaPage() {
     async function handleFirmaConPulsante() {
         if (!consensiDati()) return
         setStatus('signing')
-        // Posizione il piu' vicino possibile alla firma.
-        await acquisisciPosizione('firma')
         await eseguiFirma(true)
     }
 
@@ -242,12 +115,11 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, deviceId: idDispositivo() })
+                body: JSON.stringify({ token })
             })
 
             if (!res.ok) {
                 const err = await res.json()
-                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 // La config e' cambiata dopo l'apertura della pagina: si passa
                 // al pulsante invece di lasciare il cliente bloccato.
                 if (err.otpRequired === false) setOtpRequired(false)
@@ -258,7 +130,6 @@ export default function FirmaPage() {
 
             const data = await res.json()
             if (data.channel) setOtpChannel(data.channel)
-            setDestinatario(data.destinatario || '')
 
             setStatus('otp_sent')
             setOtp(['', '', '', '', '', ''])
@@ -278,48 +149,16 @@ export default function FirmaPage() {
 
         setStatus('otp_verifying')
         setError('')
-        if (modoVerifica) {
-            // Codice per aprire il contratto: se e' giusto il server lega il
-            // link a questo dispositivo e la pagina si ricarica con il contratto.
-            try {
-                const res = await fetch('/.netlify/functions/signature-verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, otp: otpCode, deviceId: idDispositivo() })
-                })
-                const data = await res.json().catch(() => ({}))
-                if (!res.ok) {
-                    if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
-                    if (data.status === 'revoked') { setStatus('expired'); return }
-                    setError(data.error || 'Codice non valido')
-                    if (data.remainingAttempts !== undefined) setRemainingAttempts(data.remainingAttempts)
-                    setStatus('otp_sent')
-                    return
-                }
-                setOtp(['', '', '', '', '', ''])
-                setRemainingAttempts(5)
-                setStatus('loading')
-                await loadSigningData()
-            } catch {
-                setError('Errore nella verifica del codice')
-                setStatus('otp_sent')
-            }
-            return
-        }
-        // Posizione per la firma: parte insieme alla verifica del codice, cosi'
-        // e' presa pochi secondi prima della firma senza farla aspettare.
-        const posizioneFirma = acquisisciPosizione('firma')
         try {
             const res = await fetch('/.netlify/functions/signature-verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, otp: otpCode, deviceId: idDispositivo() })
+                body: JSON.stringify({ token, otp: otpCode })
             })
 
             const data = await res.json()
 
             if (!res.ok) {
-                if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
                 setError(data.error)
                 if (data.remainingAttempts !== undefined) {
                     setRemainingAttempts(data.remainingAttempts)
@@ -333,7 +172,6 @@ export default function FirmaPage() {
             // il codice, e inserirlo e' l'atto di firma. Con la conferma in
             // fondo molti si fermavano li' e il contratto restava non firmato.
             setStatus('signing')
-            await posizioneFirma
             await eseguiFirma()
         } catch {
             setError('Errore nella verifica del codice')
@@ -350,13 +188,11 @@ export default function FirmaPage() {
             const res = await fetch('/.netlify/functions/signature-complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, marketingConsent: acceptedMarketing, confermaFirma: conPulsante, deviceId: idDispositivo() })
+                body: JSON.stringify({ token, marketingConsent: acceptedMarketing, confermaFirma: conPulsante })
             })
 
             if (!res.ok) {
                 const err = await res.json()
-                if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
-                if (err.code === 'verifica_richiesta') { setStatus('loading'); await loadSigningData(); return }
                 setError(err.error)
                 return
             }
@@ -389,27 +225,6 @@ export default function FirmaPage() {
                     <div className="text-5xl mb-4">&#8987;</div>
                     <h1 className="text-2xl font-bold text-gray-800 mb-2">Link Scaduto</h1>
                     <p className="text-gray-600">Il link di firma e scaduto. Contatta il mittente per ricevere un nuovo link.</p>
-                </div>
-            </div>
-        )
-    }
-
-    if (status === 'bloccato') {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-                    <svg viewBox="0 0 24 24" className="h-12 w-12 mx-auto mb-4 text-yellow-600" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                        <rect x="5" y="11" width="14" height="10" rx="2" />
-                        <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
-                    </svg>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">ACCESSO DA NUOVO DISPOSITIVO</h1>
-                    <p className="text-gray-600">
-                        Per motivi di sicurezza, questo contratto e' associato a un altro dispositivo.
-                    </p>
-                    <p className="text-gray-600 mt-3">
-                        E' necessaria una nuova verifica prima di poter procedere con la firma:
-                        contatta DR7 per autorizzare il nuovo dispositivo.
-                    </p>
                 </div>
             </div>
         )
@@ -494,30 +309,6 @@ export default function FirmaPage() {
                     </div>
                 )}
 
-                {/* Step 0 (25/09/2026): prima del contratto, il codice inviato
-                    al recapito registrato. Chi ha solo il link si ferma qui. */}
-                {status === 'verifica' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-                        <svg viewBox="0 0 24 24" className="h-10 w-10 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                            <rect x="5" y="11" width="14" height="10" rx="2" />
-                            <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
-                        </svg>
-                        <h2 className="text-lg font-bold text-gray-800 mb-2">
-                            {cambioDispositivo ? 'Verifica del nuovo dispositivo' : 'Verifica la tua identita\''}
-                        </h2>
-                        <p className="text-gray-600 text-sm mb-6">
-                            Questo link e' personale. Per aprire il contratto inserisci il codice che DR7 invia
-                            {otpChannel === 'email' ? " all'email" : ' via WhatsApp al numero'} registrato nel contratto.
-                        </p>
-                        <button
-                            onClick={handleInviaCodiceVerifica}
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 rounded-lg transition-colors text-lg"
-                        >
-                            Invia il Codice
-                        </button>
-                    </div>
-                )}
-
                 {/* Step 1: dichiarazione, consensi e richiesta OTP.
                     14/09/2026 — tutto quello che il cliente deve accettare sta
                     QUI, prima del codice: il codice OTP e' l'ultimo gesto e
@@ -533,9 +324,7 @@ export default function FirmaPage() {
                                 integralmente il contenuto.
                             </p>
                             <p>
-                                {identitaVerificata ? (
-                                    <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma il Contratto", dopo la verifica del codice inviato al mio recapito.</>
-                                ) : otpRequired ? (
+                                {otpRequired ? (
                                     <>
                                         Confermo che la firma viene apposta volontariamente tramite il codice di verifica
                                         {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
@@ -545,12 +334,6 @@ export default function FirmaPage() {
                                 )}
                             </p>
                         </div>
-
-                        <p className="text-xs text-gray-500 mb-4">
-                            {gpsRequired
-                                ? "Per la sicurezza della firma DR7 registra la posizione del dispositivo: autorizzala quando il browser la chiede, senza posizione il documento non puo' essere firmato."
-                                : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
-                        </p>
 
                         <label className="flex items-start gap-3 mb-4 cursor-pointer">
                             <input
@@ -645,10 +428,10 @@ export default function FirmaPage() {
                         <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Inserisci Codice OTP</h2>
                         <p className="text-gray-600 text-sm mb-6 text-center">
                             {otpChannel === 'whatsapp'
-                                ? `Abbiamo inviato un codice a 6 cifre via WhatsApp${destinatario ? ` a ${destinatario}` : ''}.`
-                                : `Abbiamo inviato un codice a 6 cifre a ${destinatario || signerEmail}`}
+                                ? 'Abbiamo inviato un codice a 6 cifre via WhatsApp.'
+                                : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
                             <br />
-                            <span className="text-gray-500">{modoVerifica ? 'Inseriscilo per aprire il contratto.' : 'Inserendolo firmi il documento.'}</span>
+                            <span className="text-gray-500">Inserendolo firmi il documento.</span>
                         </p>
 
                         <div className="flex justify-center mb-6">
@@ -681,12 +464,10 @@ export default function FirmaPage() {
                                 disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
                                 className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full max-w-xs"
                             >
-                                {modoVerifica
-                                    ? (status === 'otp_verifying' ? 'Verifica in corso...' : 'Verifica e Apri il Contratto')
-                                    : (status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento')}
+                                {status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento'}
                             </button>
                             <button
-                                onClick={modoVerifica ? handleInviaCodiceVerifica : handleRequestOtp}
+                                onClick={handleRequestOtp}
                                 disabled={status === 'otp_verifying'}
                                 className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                             >

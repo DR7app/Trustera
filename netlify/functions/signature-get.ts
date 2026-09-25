@@ -1,8 +1,5 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
-import { controllaDispositivo, controllaLinkValido, conCookie } from './utils/dispositivo'
-import { leggiRete } from './utils/rete'
-import { registraEvento } from './utils/audit'
 import { leggiFirmaConfig } from './utils/firmaConfig'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
@@ -17,7 +14,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { token, deviceId } = JSON.parse(event.body || '{}')
+        const { token } = JSON.parse(event.body || '{}')
 
         if (!token) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token richiesto' }) }
@@ -26,7 +23,7 @@ export const handler: Handler = async (event) => {
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, device_session_hash, device_label, first_opened_at, revoked_at, rebind_authorized_at, rebind_authorized_by')
+            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name')
             .eq('token', token)
             .single()
 
@@ -34,43 +31,13 @@ export const handler: Handler = async (event) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
 
-        // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
-        // Questa e' la prima chiamata della pagina: se il browser non ha
-        // ancora il cookie del dispositivo, lo riceve qui.
-        const rete = leggiRete(event)
-        const dispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event, rete, { creaCookie: true })
-        if (dispositivo.blocco) return dispositivo.blocco
-
-        // Scaduto, annullato, sostituito da un rinvio o revocato dallo staff.
-        const linkNonValido = await controllaLinkValido(supabase, sigRequest, rete, dispositivo.deviceLabel)
-        if (linkNonValido) return conCookie(linkNonValido, dispositivo)
-
-        // Dispositivo non ancora legato: niente contratto, niente nomi, niente
-        // PDF. Solo la richiesta del codice al recapito registrato.
-        if (dispositivo.daVerificare) {
-            const ora = new Date().toISOString()
-            await supabase.from('signature_requests')
-                .update({ first_opened_at: ora })
+        // Check expiry
+        if (new Date(sigRequest.token_expires_at) < new Date() && sigRequest.status !== 'signed') {
+            await supabase
+                .from('signature_requests')
+                .update({ status: 'expired', updated_at: new Date().toISOString() })
                 .eq('id', sigRequest.id)
-                .is('first_opened_at', null)
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'identity_check_required',
-                descrizione: dispositivo.cambio
-                    ? `Link aperto dalla sessione ${dispositivo.deviceLabel} dopo il cambio dispositivo autorizzato dallo staff: richiesta la verifica del codice prima di mostrare il contratto`
-                    : `Link aperto dalla sessione ${dispositivo.deviceLabel}: richiesta la verifica del codice inviato al recapito registrato prima di mostrare il contratto`,
-                deviceLabel: dispositivo.deviceLabel,
-                metadata: { prima_apertura: !sigRequest.first_opened_at, cambio_dispositivo: !!dispositivo.cambio },
-            })
-            const firmaCfg = await leggiFirmaConfig(supabase, sigRequest)
-            return conCookie({
-                statusCode: 200,
-                body: JSON.stringify({
-                    status: sigRequest.status,
-                    verificaIdentita: true,
-                    cambioDispositivo: !!dispositivo.cambio,
-                    otpChannel: firmaCfg.canale,
-                }),
-            }, dispositivo)
+            return { statusCode: 410, body: JSON.stringify({ error: 'Il link di firma e scaduto', status: 'expired' }) }
         }
 
         // Fetch contract for PDF URL and details (only if contract_id exists)
@@ -170,21 +137,13 @@ export const handler: Handler = async (event) => {
 
         // Log document view
         if (sigRequest.status !== 'signed') {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'document_viewed',
-                descrizione: sigRequest.first_opened_at
-                    ? `Documento visualizzato da ${sigRequest.signer_name}`
-                    : `Prima apertura del documento da parte di ${sigRequest.signer_name}`,
-                deviceLabel: dispositivo.deviceLabel,
-                metadata: { prima_apertura: !sigRequest.first_opened_at },
+            await supabase.from('signature_audit_trail').insert({
+                signature_request_id: sigRequest.id,
+                event_type: 'document_viewed',
+                event_description: `Documento visualizzato da ${sigRequest.signer_name}`,
+                ip_address: event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown',
+                user_agent: event.headers['user-agent'] || 'unknown'
             })
-            if (!sigRequest.first_opened_at) {
-                // Link legato prima di questa versione: la prima apertura si segna ora.
-                await supabase.from('signature_requests')
-                    .update({ first_opened_at: new Date().toISOString() })
-                    .eq('id', sigRequest.id)
-                    .is('first_opened_at', null)
-            }
         }
 
         // Generate signed URLs for PDFs (public URLs fail if bucket isn't public)
@@ -208,7 +167,7 @@ export const handler: Handler = async (event) => {
         const contractPdfUrl = contract ? await getSignedUrl(contract.pdf_url) : await getSignedUrl(sigRequest.document_url)
         const signedPdfUrl = await getSignedUrl(sigRequest.signed_pdf_url)
 
-        return conCookie({
+        return {
             statusCode: 200,
             body: JSON.stringify({
                 status: sigRequest.status,
@@ -220,7 +179,6 @@ export const handler: Handler = async (event) => {
                 existingMarketingConsent,
                 otpRequired: firma.otpAttivo,
                 otpChannel: firma.canale,
-                gpsRequired: firma.gpsObbligatorio,
                 contract: contract ? {
                     contractNumber: contract.contract_number,
                     pdfUrl: contractPdfUrl,
@@ -237,7 +195,7 @@ export const handler: Handler = async (event) => {
                     rentalEndDate: null
                 } : null
             })
-        }, dispositivo)
+        }
     } catch (error: any) {
         console.error('Error in signature-get:', error)
         return {

@@ -1,8 +1,5 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
-import { controllaDispositivo, controllaLinkValido, rispostaVerificaRichiesta } from './utils/dispositivo'
-import { leggiRete, descriviIpGeo } from './utils/rete'
-import { registraEvento } from './utils/audit'
 import { leggiFirmaConfig } from './utils/firmaConfig'
 import crypto from 'crypto'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
@@ -19,43 +16,20 @@ const supabaseTrustera = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-/**
- * Data e ora del sigillo, ora di Roma. 25/09/2026: prima si usavano le ore
- * del server (UTC) con la scritta "CET", quindi il sigillo segnava 1-2 ore
- * indietro rispetto all'ora italiana. Il carattere "—" resta: Helvetica
- * standard lo disegna gia' oggi.
- */
-function oraSigillo(d: Date): string {
-    const parti = Object.fromEntries(new Intl.DateTimeFormat('it-IT', {
-        timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short',
-    }).formatToParts(d).map(p => [p.type, p.value]))
-    // Intl in italiano scrive "CEST"/"CET" oppure "GMT+2"/"GMT+1".
-    const zona = parti.timeZoneName === 'GMT+2' ? 'CEST' : parti.timeZoneName === 'GMT+1' ? 'CET' : (parti.timeZoneName || 'CET')
-    return `${parti.day}/${parti.month}/${parti.year} — ${parti.hour}:${parti.minute} ${zona}`
-}
-
 export const handler: Handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
     }
 
-    // Id della richiesta di cui questa chiamata ha preso il blocco di
-    // finalizzazione: se qualcosa si rompe a meta', il catch lo libera.
-    let richiestaBloccata: string | null = null
-
     try {
-        const { token, signatureImage, signatureImage2, marketingConsent, confermaFirma, deviceId } = JSON.parse(event.body || '{}')
+        const { token, signatureImage, signatureImage2, marketingConsent, confermaFirma } = JSON.parse(event.body || '{}')
 
         if (!token) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token richiesto' }) }
         }
 
-        // 25/09/2026: IP del cliente dall'header di Netlify, non la catena
-        // x-forwarded-for (utils/rete.ts).
-        const rete = leggiRete(event)
-        const ipAddress = rete.clientIp
-        const userAgent = rete.userAgent
+        const ipAddress = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown'
+        const userAgent = event.headers['user-agent'] || 'unknown'
 
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
@@ -68,103 +42,41 @@ export const handler: Handler = async (event) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
 
-        // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
-        const dispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event, rete)
-        if (dispositivo.blocco) return dispositivo.blocco
-        // Senza il codice al recapito registrato il dispositivo non e' legato e non firma.
-        if (dispositivo.daVerificare) return rispostaVerificaRichiesta(dispositivo)
-        const deviceLabel = dispositivo.deviceLabel
-
         // Validate state
         if (sigRequest.status === 'signed') {
             return { statusCode: 400, body: JSON.stringify({ error: 'Il documento e gia stato firmato' }) }
         }
 
-        // Scaduto, annullato, sostituito da un rinvio o revocato dallo staff.
-        const linkNonValido = await controllaLinkValido(supabase, sigRequest, rete, deviceLabel)
-        if (linkNonValido) return linkNonValido
-
         // Con l'OTP acceso (Centralina Pro > Firma del contratto) si firma solo
         // dopo il codice. Con l'OTP spento la firma e' il pulsante "Firma il
         // Contratto": lo decide il server rileggendo la config, non la pagina,
         // cosi' nessuno salta il codice quando e' richiesto.
-        const firmaConfig = await leggiFirmaConfig(supabase, sigRequest)
         let firmaConPulsante = false
         if (sigRequest.status !== 'otp_verified') {
+            const firma = await leggiFirmaConfig(supabase, sigRequest)
             const statoFirmabile = sigRequest.status === 'pending' || sigRequest.status === 'otp_sent'
-            if (firmaConfig.otpAttivo || confermaFirma !== true || !statoFirmabile) {
+            if (firma.otpAttivo || confermaFirma !== true || !statoFirmabile) {
                 return { statusCode: 400, body: JSON.stringify({ error: 'Verifica OTP richiesta prima della firma' }) }
             }
             firmaConPulsante = true
         }
 
-        // Posizione al momento della firma: l'ultima acquisita dalla pagina
-        // nella fase "firma" (signature-posizione), al massimo 10 minuti fa.
-        // Non si usa mai la posizione dell'apertura al posto di questa.
-        const { data: ultimaPosizione } = await supabase
-            .from('signature_audit_trail')
-            .select('event_type, metadata, created_at')
-            .eq('signature_request_id', sigRequest.id)
-            .in('event_type', ['gps_captured', 'gps_permission_denied', 'gps_unavailable'])
-            .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
-            .order('created_at', { ascending: false })
-            .limit(10)
-        const posizioneFirma = (ultimaPosizione || []).find((r: any) => r.metadata?.fase === 'firma') || null
-        const gpsFirma = posizioneFirma?.event_type === 'gps_captured' ? posizioneFirma : null
-        if (firmaConfig.gpsObbligatorio && !gpsFirma) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'security_block',
-                descrizione: "Firma non consentita: la posizione del dispositivo e' obbligatoria (Centralina Pro) e non e' stata autorizzata",
-                deviceLabel,
-                metadata: { motivo: 'gps_obbligatorio' },
-            })
-            return { statusCode: 400, body: JSON.stringify({ error: "Per firmare questo documento e' necessario autorizzare la posizione del dispositivo.", code: 'gps_richiesto' }) }
+        if (new Date(sigRequest.token_expires_at) < new Date()) {
+            await supabase
+                .from('signature_requests')
+                .update({ status: 'expired', updated_at: new Date().toISOString() })
+                .eq('id', sigRequest.id)
+            return { statusCode: 410, body: JSON.stringify({ error: 'Il link di firma e scaduto' }) }
         }
-
-        // 25/09/2026 — Una sola finalizzazione per volta (firma_inizia_finalizzazione):
-        // ricontrolla nel database stato, scadenza, revoca e OTP verificato e
-        // blocca il contratto. Doppio clic, due schede o due firmatari dello
-        // stesso contratto nello stesso istante: il secondo aspetta.
-        const { data: bloccoRaw, error: bloccoErr } = await supabase.rpc('firma_inizia_finalizzazione', {
-            p_request: sigRequest.id,
-            p_con_pulsante: firmaConPulsante,
-        })
-        if (bloccoErr) throw bloccoErr
-        const blocco = (bloccoRaw || {}) as { esito?: string }
-        if (blocco.esito !== 'ok') {
-            if (blocco.esito === 'in_corso') {
-                await registraEvento(supabase, sigRequest.id, rete, {
-                    tipo: 'concurrent_attempt',
-                    descrizione: "Tentativo di firma mentre un'altra firma dello stesso contratto era in corso: rimandato",
-                    deviceLabel,
-                })
-                return { statusCode: 409, body: JSON.stringify({ error: "Un'altra firma di questo contratto e' in corso. Riprova tra qualche secondo.", code: 'firma_in_corso' }) }
-            }
-            if (blocco.esito === 'firmato') return { statusCode: 400, body: JSON.stringify({ error: 'Il documento e gia stato firmato' }) }
-            if (blocco.esito === 'scaduto') return { statusCode: 410, body: JSON.stringify({ error: 'Il link di firma e scaduto' }) }
-            if (blocco.esito === 'revocato') return { statusCode: 410, body: JSON.stringify({ error: "Il link di firma non e' piu' valido", code: 'link_revocato' }) }
-            return { statusCode: 400, body: JSON.stringify({ error: 'Verifica OTP richiesta prima della firma' }) }
-        }
-        richiestaBloccata = sigRequest.id
-        const rilasciaBlocco = () => supabase
-            .from('signature_requests')
-            .update({ finalizing_at: null })
-            .eq('id', sigRequest.id)
-            .neq('status', 'signed')
-
-        await registraEvento(supabase, sigRequest.id, rete, {
-            tipo: 'signature_started',
-            descrizione: 'Procedura di firma avviata: controlli superati (link, dispositivo, ' + (firmaConPulsante ? 'firma con pulsante' : 'OTP verificato') + ')',
-            deviceLabel,
-            metadata: { metodo: firmaConPulsante ? 'pulsante' : 'otp' },
-        })
 
         if (firmaConPulsante) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'firma_confermata',
-                descrizione: `Firma confermata con il pulsante "Firma il Contratto" da ${sigRequest.signer_name || sigRequest.signer_email} (OTP non richiesto)`,
-                deviceLabel,
-                metadata: { metodo: 'pulsante', confermata_at: new Date().toISOString() },
+            await supabase.from('signature_audit_trail').insert({
+                signature_request_id: sigRequest.id,
+                event_type: 'firma_confermata',
+                event_description: `Firma confermata con il pulsante "Firma il Contratto" da ${sigRequest.signer_name || sigRequest.signer_email} (OTP non richiesto)`,
+                ip_address: ipAddress,
+                user_agent: userAgent,
+                metadata: { metodo: 'pulsante', confermata_at: new Date().toISOString() }
             })
             await supabase
                 .from('signature_requests')
@@ -206,7 +118,6 @@ export const handler: Handler = async (event) => {
         }
 
         if (!originalPdfUrl) {
-            await rilasciaBlocco()
             return { statusCode: 404, body: JSON.stringify({ error: 'Documento PDF non trovato' }) }
         }
 
@@ -215,7 +126,6 @@ export const handler: Handler = async (event) => {
         // firma accumulata di un altro firmatario è sulla STESSA versione corrente.
         const origPdfResponse = await fetch(originalPdfUrl)
         if (!origPdfResponse.ok) {
-            await rilasciaBlocco()
             return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile scaricare il PDF' }) }
         }
         const originalPdfBytes = new Uint8Array(await origPdfResponse.arrayBuffer())
@@ -223,13 +133,14 @@ export const handler: Handler = async (event) => {
 
         // Verify PDF integrity (hash must match what was stored at init)
         if (sigRequest.original_pdf_hash && currentHash !== sigRequest.original_pdf_hash) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'integrity_check_failed',
-                descrizione: 'Hash del PDF non corrisponde. Il documento potrebbe essere stato modificato.',
-                deviceLabel,
-                metadata: { expected_hash: sigRequest.original_pdf_hash, actual_hash: currentHash },
+            await supabase.from('signature_audit_trail').insert({
+                signature_request_id: sigRequest.id,
+                event_type: 'integrity_check_failed',
+                event_description: 'Hash del PDF non corrisponde. Il documento potrebbe essere stato modificato.',
+                ip_address: ipAddress,
+                user_agent: userAgent,
+                metadata: { expected_hash: sigRequest.original_pdf_hash, actual_hash: currentHash }
             })
-            await rilasciaBlocco()
             return {
                 statusCode: 409,
                 body: JSON.stringify({ error: 'Il documento e stato modificato dopo la creazione della richiesta di firma. Genera una nuova richiesta.' })
@@ -483,7 +394,12 @@ export const handler: Handler = async (event) => {
                 const locInfoX = locSealX + 4
                 const locInfoY = locHeaderY - 9
                 sealPage.drawText('Ilenia Campagnola', { x: locInfoX, y: locInfoY, size: 5.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
-                sealPage.drawText(oraSigillo(signedAt), { x: locInfoX, y: locInfoY - 7, size: 4, font, color: sealGray })
+                const dd = String(signedAt.getDate()).padStart(2, '0')
+                const mo = String(signedAt.getMonth() + 1).padStart(2, '0')
+                const yy = signedAt.getFullYear()
+                const hh = String(signedAt.getHours()).padStart(2, '0')
+                const mi = String(signedAt.getMinutes()).padStart(2, '0')
+                sealPage.drawText(`${dd}/${mo}/${yy} — ${hh}:${mi} CET`, { x: locInfoX, y: locInfoY - 7, size: 4, font, color: sealGray })
                 sealPage.drawText(`ID: ${certId}`, { x: locInfoX, y: locInfoY - 13, size: 3.5, font, color: sealLightGray })
                 const locQrSize = 13
                 sealPage.drawImage(qrImage, { x: locSealX + sealW - locQrSize - 4, y: locInfoY - 3, width: locQrSize, height: locQrSize })
@@ -580,7 +496,12 @@ export const handler: Handler = async (event) => {
             sealPage.drawText(signerDisplayName, { x: infoX, y: infoY, size: 5.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
 
             // Date + time
-            sealPage.drawText(oraSigillo(signedAt), { x: infoX, y: infoY - 7, size: 4, font, color: sealGray })
+            const dd = String(signedAt.getDate()).padStart(2, '0')
+            const mo = String(signedAt.getMonth() + 1).padStart(2, '0')
+            const yy = signedAt.getFullYear()
+            const hh = String(signedAt.getHours()).padStart(2, '0')
+            const mi = String(signedAt.getMinutes()).padStart(2, '0')
+            sealPage.drawText(`${dd}/${mo}/${yy} — ${hh}:${mi} CET`, { x: infoX, y: infoY - 7, size: 4, font, color: sealGray })
 
             // Certificate ID
             sealPage.drawText(`ID: ${certId}`, { x: infoX, y: infoY - 13, size: 3.5, font, color: sealLightGray })
@@ -658,17 +579,6 @@ export const handler: Handler = async (event) => {
         const { data: publicUrl } = supabase.storage.from('contracts').getPublicUrl(fileName)
         const signedPdfUrl = publicUrl.publicUrl
 
-        // Posizione al momento della firma (dato originale del dispositivo +
-        // indirizzo stimato), salvata anche sulla richiesta.
-        const signingLocation = gpsFirma ? {
-            ...gpsFirma.metadata,
-            acquisita_server_at: gpsFirma.created_at,
-            secondi_prima_della_firma: Math.round((signedAt.getTime() - new Date(gpsFirma.created_at).getTime()) / 1000),
-        } : posizioneFirma ? {
-            esito: posizioneFirma.event_type === 'gps_permission_denied' ? 'GPS NON AUTORIZZATO DAL CLIENTE' : 'GPS NON DISPONIBILE',
-            registrato_server_at: posizioneFirma.created_at,
-        } : { esito: 'NON ACQUISITA' }
-
         // Update signature request as signed
         await supabase
             .from('signature_requests')
@@ -679,12 +589,9 @@ export const handler: Handler = async (event) => {
                 signer_ip: ipAddress,
                 signer_user_agent: userAgent,
                 signed_at: signedAt.toISOString(),
-                updated_at: signedAt.toISOString(),
-                finalizing_at: null,
-                signing_location: signingLocation,
+                updated_at: signedAt.toISOString()
             })
             .eq('id', sigRequest.id)
-        richiestaBloccata = null
 
         // Update contract record (only if this is a contract-based signature)
         if (sigRequest.contract_id) {
@@ -697,12 +604,13 @@ export const handler: Handler = async (event) => {
                 .eq('id', sigRequest.contract_id)
         }
 
-        // Log final audit event. La sua impronta nella catena (event_hash)
-        // chiude il registro fino alla firma: e' lo SHA-256 dell'audit trail.
-        const auditTrailHash = await registraEvento(supabase, sigRequest.id, rete, {
-            tipo: 'document_signed',
-            descrizione: `Documento firmato da ${sigRequest.signer_name} (${sigRequest.signer_email})`,
-            deviceLabel,
+        // Log final audit event
+        await supabase.from('signature_audit_trail').insert({
+            signature_request_id: sigRequest.id,
+            event_type: 'document_signed',
+            event_description: `Documento firmato da ${sigRequest.signer_name} (${sigRequest.signer_email})`,
+            ip_address: ipAddress,
+            user_agent: userAgent,
             metadata: {
                 signed_at: signedAt.toISOString(),
                 signed_at_rome: signedAtRome,
@@ -711,17 +619,9 @@ export const handler: Handler = async (event) => {
                 signed_pdf_url: signedPdfUrl,
                 document_identifier: docIdentifier,
                 metodo_firma: firmaConPulsante ? 'pulsante' : 'otp',
-                marketing_consent: !!marketingConsent,
-                device_label: deviceLabel,
-                otp_channel: firmaConPulsante ? null : (sigRequest.otp_channel || otpChannel),
-                ip_geo: rete.ipGeo,
-                ip_geo_testo: descriviIpGeo(rete.ipGeo),
-                signing_location: signingLocation,
+                marketing_consent: !!marketingConsent
             }
         })
-        if (auditTrailHash) {
-            await supabase.from('signature_requests').update({ audit_trail_hash: auditTrailHash }).eq('id', sigRequest.id)
-        }
 
         // Save marketing consent on customer record — NEVER overwrite true with false (GDPR: consent once given is kept)
         if (marketingConsent !== undefined) {
@@ -994,10 +894,6 @@ export const handler: Handler = async (event) => {
         }
     } catch (error: any) {
         console.error('Error in signature-complete:', error)
-        if (richiestaBloccata) {
-            await supabase.from('signature_requests').update({ finalizing_at: null })
-                .eq('id', richiestaBloccata).neq('status', 'signed')
-        }
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Errore nella firma del documento', details: error.message })

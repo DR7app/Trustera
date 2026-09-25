@@ -1,9 +1,5 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
-import { controllaDispositivo, controllaLinkValido, conCookie } from './utils/dispositivo'
-import crypto from 'crypto'
-import { leggiRete, mascheraEmail, mascheraTelefono } from './utils/rete'
-import { registraEvento } from './utils/audit'
 import { Resend } from 'resend'
 import { leggiFirmaConfig } from './utils/firmaConfig'
 
@@ -19,9 +15,6 @@ const GREEN_API_TOKEN = process.env.DR7_GREEN_API_TOKEN || process.env.GREEN_API
 
 const OTP_EXPIRY_MINUTES = 10
 const MAX_OTP_ATTEMPTS = 5
-// Invii di codice per link in 15 minuti (il cliente che preme "Invia di
-// nuovo" una volta o due passa; chi insiste a raffica no).
-const MAX_INVII_15_MIN = 3
 
 export const handler: Handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -29,7 +22,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { token, deviceId } = JSON.parse(event.body || '{}')
+        const { token } = JSON.parse(event.body || '{}')
 
         if (!token) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token richiesto' }) }
@@ -46,15 +39,14 @@ export const handler: Handler = async (event) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
 
-        // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
-        const rete = leggiRete(event)
-        const dispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event, rete)
-        if (dispositivo.blocco) return dispositivo.blocco
-        const deviceLabel = dispositivo.deviceLabel
-
-        // Scaduto, annullato, sostituito da un rinvio o revocato dallo staff.
-        const linkNonValido = await controllaLinkValido(supabase, sigRequest, rete, deviceLabel)
-        if (linkNonValido) return conCookie(linkNonValido, dispositivo)
+        // Check token expiry
+        if (new Date(sigRequest.token_expires_at) < new Date()) {
+            await supabase
+                .from('signature_requests')
+                .update({ status: 'expired', updated_at: new Date().toISOString() })
+                .eq('id', sigRequest.id)
+            return { statusCode: 410, body: JSON.stringify({ error: 'Il link di firma e scaduto' }) }
+        }
 
         if (sigRequest.status === 'signed') {
             return { statusCode: 400, body: JSON.stringify({ error: 'Il documento e gia stato firmato' }) }
@@ -64,71 +56,35 @@ export const handler: Handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'La richiesta di firma e stata annullata' }) }
         }
 
-        // daVerificare: il codice serve ad aprire il contratto (primo accesso o
-        // cambio dispositivo autorizzato), anche se la firma poi e' col
-        // pulsante o un altro dispositivo aveva gia' verificato.
-        if (sigRequest.status === 'otp_verified' && !dispositivo.daVerificare) {
+        if (sigRequest.status === 'otp_verified') {
             return { statusCode: 400, body: JSON.stringify({ error: 'OTP gia verificato. Procedi con la firma.' }) }
         }
 
         if (sigRequest.otp_attempts >= MAX_OTP_ATTEMPTS) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'otp_locked',
-                descrizione: 'Richiesta di un nuovo codice respinta: raggiunto il numero massimo di tentativi OTP',
-                deviceLabel,
-                metadata: { tentativi: sigRequest.otp_attempts },
-            })
             return { statusCode: 429, body: JSON.stringify({ error: 'Troppi tentativi. Richiedi un nuovo link di firma.' }) }
         }
 
         // Centralina Pro > Firma del contratto: con l'OTP spento si firma con
         // il pulsante, il codice non serve e non si manda.
         const firma = await leggiFirmaConfig(supabase, sigRequest)
-        if (!firma.otpAttivo && !dispositivo.daVerificare) {
+        if (!firma.otpAttivo) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Per questo documento non serve il codice: firma con il pulsante.', otpRequired: false }) }
         }
 
-        // Troppi codici in poco tempo sullo stesso link.
-        const { count: inviRecenti } = await supabase
-            .from('signature_audit_trail')
-            .select('id', { count: 'exact', head: true })
-            .eq('signature_request_id', sigRequest.id)
-            .eq('event_type', 'otp_sent')
-            .gte('created_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
-        if ((inviRecenti || 0) >= MAX_INVII_15_MIN) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'otp_rate_limited',
-                descrizione: `Richiesta di un nuovo codice respinta: gia' ${inviRecenti} codici inviati negli ultimi 15 minuti`,
-                deviceLabel,
-            })
-            return { statusCode: 429, body: JSON.stringify({ error: 'Hai richiesto troppi codici. Riprova tra qualche minuto.' }) }
-        }
-
-        await registraEvento(supabase, sigRequest.id, rete, {
-            tipo: 'otp_requested',
-            descrizione: 'Il firmatario ha richiesto il codice di verifica',
-            deviceLabel,
-        })
-
-        // Codice a 6 cifre da generatore crittografico. Nel database va solo
-        // l'impronta SHA-256 di "<id richiesta>:<codice>" (legata a questa
-        // richiesta): il codice in chiaro non si salva e non va nei log.
-        const otp = String(crypto.randomInt(100000, 1000000))
-        const otpHash = crypto.createHash('sha256').update(`${sigRequest.id}:${otp}`).digest('hex')
+        // Generate 6-digit OTP
+        const otp = String(Math.floor(100000 + Math.random() * 900000))
         const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000)
 
         // Save OTP
         await supabase
             .from('signature_requests')
             .update({
-                otp_code: null,
-                otp_hash: otpHash,
+                otp_code: otp,
                 otp_expires_at: otpExpiresAt.toISOString(),
                 status: 'otp_sent',
                 updated_at: new Date().toISOString()
             })
             .eq('id', sigRequest.id)
-            .neq('status', 'signed')
 
         // Try signer_phone stored directly on the request first
         let customerPhone = sigRequest.signer_phone || ''
@@ -300,45 +256,33 @@ export const handler: Handler = async (event) => {
             if (ok) { channel = c; break }
         }
         if (!channel) {
-            await registraEvento(supabase, sigRequest.id, rete, {
-                tipo: 'otp_send_failed',
-                descrizione: 'Invio del codice di verifica non riuscito su WhatsApp ed email',
-                deviceLabel,
-                metadata: { errore_email: erroreEmail || null },
-            })
             return { statusCode: 500, body: JSON.stringify({ error: 'Impossibile inviare il codice OTP. Contatta DR7.', details: erroreEmail || undefined }) }
         }
         if (channel !== firma.canale) {
             console.warn(`[signature-send-otp] Canale scelto ${firma.canale} non disponibile, inviato via ${channel}`)
         }
 
-        // Recapito registrato (deciso qui dal server, mai dalla pagina), mascherato.
-        const destinatario = channel === 'whatsapp' ? mascheraTelefono(customerPhone) : mascheraEmail(sigRequest.signer_email)
-        await supabase
-            .from('signature_requests')
-            .update({ otp_channel: channel, otp_recipient_masked: destinatario, otp_sent_at: new Date().toISOString() })
-            .eq('id', sigRequest.id)
-
-        // Log audit (tipo 'otp_sent': signature-complete ci legge il canale)
-        await registraEvento(supabase, sigRequest.id, rete, {
-            tipo: 'otp_sent',
-            descrizione: channel === 'whatsapp'
-                ? `Codice OTP inviato via WhatsApp al recapito registrato${destinatario ? ` (${destinatario})` : ''}`
-                : `Codice OTP inviato via email al recapito registrato${destinatario ? ` (${destinatario})` : ''}`,
-            deviceLabel,
-            metadata: { otp_expires_at: otpExpiresAt.toISOString(), channel, destinatario },
+        // Log audit
+        await supabase.from('signature_audit_trail').insert({
+            signature_request_id: sigRequest.id,
+            event_type: 'otp_sent',
+            event_description: channel === 'whatsapp'
+                ? `Codice OTP inviato via WhatsApp`
+                : `Codice OTP inviato via email a ${sigRequest.signer_email}`,
+            ip_address: event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown',
+            user_agent: event.headers['user-agent'] || 'unknown',
+            metadata: { otp_expires_at: otpExpiresAt.toISOString(), channel }
         })
 
-        return conCookie({
+        return {
             statusCode: 200,
             body: JSON.stringify({
                 success: true,
                 channel,
-                destinatario,
                 message: channel === 'whatsapp' ? 'Codice OTP inviato via WhatsApp' : 'Codice OTP inviato via email',
                 expiresInMinutes: OTP_EXPIRY_MINUTES
             })
-        }, dispositivo)
+        }
     } catch (error: any) {
         console.error('Error in signature-send-otp:', error)
         return {
