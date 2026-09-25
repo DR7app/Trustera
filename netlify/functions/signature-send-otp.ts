@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { controllaDispositivo } from './utils/dispositivo'
 import { Resend } from 'resend'
 import { leggiFirmaConfig } from './utils/firmaConfig'
 
@@ -22,7 +23,7 @@ export const handler: Handler = async (event) => {
     }
 
     try {
-        const { token } = JSON.parse(event.body || '{}')
+        const { token, deviceId } = JSON.parse(event.body || '{}')
 
         if (!token) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Token richiesto' }) }
@@ -38,6 +39,10 @@ export const handler: Handler = async (event) => {
         if (error || !sigRequest) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
+
+        // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
+        const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
+        if (bloccoDispositivo) return bloccoDispositivo
 
         // Check token expiry
         if (new Date(sigRequest.token_expires_at) < new Date()) {
