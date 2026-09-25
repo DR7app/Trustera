@@ -148,7 +148,7 @@ export const handler: Handler = async (event) => {
         // Stesso Supabase DR7. Variabili: {otp}, {expiryMinutes}. Se il template
         // manca o è disattivato si usa il testo DR7 di default — l'OTP parte
         // SEMPRE, non si rompe mai.
-        const otpFallback = `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nNon condividere questo codice con nessuno: serve solo a te per firmare il tuo contratto.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
+        const otpFallback = `*MESSAGGIO AUTOMATICO GENERATO DA DR7 A.i.*\n\n*DR7 – Codice di Verifica*\n\nIl tuo codice OTP per la firma del contratto è:\n\n*${otp}*\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7`
         let otpMessage = otpFallback
         try {
             // 2026-07-01: BUGFIX — leggi TUTTE le righe 'pro_firma_otp' e scegli
@@ -223,7 +223,7 @@ export const handler: Handler = async (event) => {
                 from: 'DR7 <info@dr7.app>',
                 to: sigRequest.signer_email,
                 subject: 'Codice di Verifica - DR7',
-                text: `Il tuo codice di verifica DR7 è: ${otp}\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nNon condividere questo codice con nessuno: serve solo a te per firmare il tuo contratto.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7 S.p.A. - www.dr7.app`,
+                text: `Il tuo codice di verifica DR7 è: ${otp}\n\nIl codice sarà valido per i prossimi ${OTP_EXPIRY_MINUTES} minuti.\n\nSe non hai richiesto questo codice o ritieni di averlo ricevuto per errore, puoi ignorare il presente messaggio.\n\nDR7 S.p.A. - www.dr7.app`,
                 html: `
                     <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="text-align: center; margin-bottom: 30px;">
@@ -237,7 +237,6 @@ export const handler: Handler = async (event) => {
                             </div>
                         </div>
                         <p style="text-align: center; color: #666; font-size: 13px;">Il codice scade tra ${OTP_EXPIRY_MINUTES} minuti.</p>
-                        <p style="text-align: center; color: #b45309; font-size: 13px;"><strong>Non condividere questo codice con nessuno</strong>: serve solo a te per firmare il tuo contratto.</p>
                         <p style="text-align: center; color: #666; font-size: 13px;">Se non hai richiesto questo codice, ignora questa email.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
                         <p style="color: #999; font-size: 11px; text-align: center;">
