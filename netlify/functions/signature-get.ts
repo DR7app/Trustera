@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, device_session_hash, device_label, first_opened_at, revoked_at')
+            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, device_session_hash, device_label, first_opened_at, revoked_at, rebind_authorized_at, rebind_authorized_by')
             .eq('token', token)
             .single()
 
@@ -44,6 +44,34 @@ export const handler: Handler = async (event) => {
         // Scaduto, annullato, sostituito da un rinvio o revocato dallo staff.
         const linkNonValido = await controllaLinkValido(supabase, sigRequest, rete, dispositivo.deviceLabel)
         if (linkNonValido) return conCookie(linkNonValido, dispositivo)
+
+        // Dispositivo non ancora legato: niente contratto, niente nomi, niente
+        // PDF. Solo la richiesta del codice al recapito registrato.
+        if (dispositivo.daVerificare) {
+            const ora = new Date().toISOString()
+            await supabase.from('signature_requests')
+                .update({ first_opened_at: ora })
+                .eq('id', sigRequest.id)
+                .is('first_opened_at', null)
+            await registraEvento(supabase, sigRequest.id, rete, {
+                tipo: 'identity_check_required',
+                descrizione: dispositivo.cambio
+                    ? `Link aperto dalla sessione ${dispositivo.deviceLabel} dopo il cambio dispositivo autorizzato dallo staff: richiesta la verifica del codice prima di mostrare il contratto`
+                    : `Link aperto dalla sessione ${dispositivo.deviceLabel}: richiesta la verifica del codice inviato al recapito registrato prima di mostrare il contratto`,
+                deviceLabel: dispositivo.deviceLabel,
+                metadata: { prima_apertura: !sigRequest.first_opened_at, cambio_dispositivo: !!dispositivo.cambio },
+            })
+            const firmaCfg = await leggiFirmaConfig(supabase, sigRequest)
+            return conCookie({
+                statusCode: 200,
+                body: JSON.stringify({
+                    status: sigRequest.status,
+                    verificaIdentita: true,
+                    cambioDispositivo: !!dispositivo.cambio,
+                    otpChannel: firmaCfg.canale,
+                }),
+            }, dispositivo)
+        }
 
         // Fetch contract for PDF URL and details (only if contract_id exists)
         let contract: any = null

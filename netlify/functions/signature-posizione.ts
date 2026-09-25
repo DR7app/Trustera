@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
-import { controllaDispositivo, controllaLinkValido, conCookie } from './utils/dispositivo'
+import { controllaDispositivo, controllaLinkValido, conCookie, rispostaVerificaRichiesta } from './utils/dispositivo'
 import { leggiRete, descriviIpGeo, distanzaKm } from './utils/rete'
 import { registraEvento } from './utils/audit'
 
@@ -95,7 +95,7 @@ export const handler: Handler = async (event) => {
 
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, status, signer_name, token_expires_at, revoked_at, device_id, device_session_hash, device_label, first_opened_at')
+            .select('id, status, signer_name, token_expires_at, revoked_at, device_id, device_session_hash, device_label, first_opened_at, rebind_authorized_at, rebind_authorized_by')
             .eq('token', token)
             .single()
         if (error || !sigRequest) {
@@ -105,6 +105,7 @@ export const handler: Handler = async (event) => {
         const rete = leggiRete(event)
         const dispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event, rete)
         if (dispositivo.blocco) return dispositivo.blocco
+        if (dispositivo.daVerificare) return rispostaVerificaRichiesta(dispositivo)
         const deviceLabel = dispositivo.deviceLabel
 
         // Firmato: la posizione non serve piu'. Scaduto/revocato: si respinge.

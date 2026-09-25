@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
-import { controllaDispositivo, controllaLinkValido } from './utils/dispositivo'
+import { controllaDispositivo, controllaLinkValido, rispostaVerificaRichiesta } from './utils/dispositivo'
 import { leggiRete, descriviIpGeo } from './utils/rete'
 import { registraEvento } from './utils/audit'
 import { leggiFirmaConfig } from './utils/firmaConfig'
@@ -71,6 +71,8 @@ export const handler: Handler = async (event) => {
         // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
         const dispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event, rete)
         if (dispositivo.blocco) return dispositivo.blocco
+        // Senza il codice al recapito registrato il dispositivo non e' legato e non firma.
+        if (dispositivo.daVerificare) return rispostaVerificaRichiesta(dispositivo)
         const deviceLabel = dispositivo.deviceLabel
 
         // Validate state

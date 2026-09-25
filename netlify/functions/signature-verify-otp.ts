@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
-import { controllaDispositivo, controllaLinkValido, conCookie } from './utils/dispositivo'
+import { controllaDispositivo, controllaLinkValido, conCookie, legaDispositivo, MESSAGGIO_ALTRO_DISPOSITIVO } from './utils/dispositivo'
 import { leggiRete } from './utils/rete'
 import { registraEvento } from './utils/audit'
 
@@ -106,6 +106,18 @@ export const handler: Handler = async (event) => {
                 return { statusCode: 400, body: JSON.stringify({ error: 'Nessun codice OTP attivo. Richiedi un nuovo codice.' }) }
         }
 
+        // Codice giusto dal recapito registrato: solo ora il link si lega a
+        // questo dispositivo (primo accesso o cambio autorizzato dallo staff).
+        if (dispositivo.daVerificare) {
+            const legato = await legaDispositivo(supabase, sigRequest, dispositivo, rete)
+            if (!legato) {
+                return conCookie({
+                    statusCode: 403,
+                    body: JSON.stringify({ error: MESSAGGIO_ALTRO_DISPOSITIVO, code: 'altro_dispositivo', status: 'NEW_DEVICE_VERIFICATION_REQUIRED' }),
+                }, dispositivo)
+            }
+        }
+
         // OTP verified successfully
         await supabase
             .from('signature_requests')
@@ -127,7 +139,8 @@ export const handler: Handler = async (event) => {
             statusCode: 200,
             body: JSON.stringify({
                 success: true,
-                message: 'Codice OTP verificato. Puoi procedere con la firma.'
+                message: 'Codice OTP verificato. Puoi procedere con la firma.',
+                dispositivoLegato: dispositivo.daVerificare
             })
         }, dispositivo)
     } catch (error: any) {

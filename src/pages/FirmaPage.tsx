@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
-type SigningStatus = 'loading' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
+type SigningStatus = 'loading' | 'verifica' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
 
 interface ContractInfo {
     contractNumber: string
@@ -92,6 +92,13 @@ export default function FirmaPage() {
     // Centralina Pro > Firma del contratto: posizione obbligatoria per firmare.
     const [gpsRequired, setGpsRequired] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+    // 25/09/2026: il contratto si apre solo dopo il codice inviato al recapito
+    // registrato (utils/dispositivo.ts). modoVerifica = il codice in corso
+    // serve ad aprire il contratto, non a firmare.
+    const [modoVerifica, setModoVerifica] = useState(false)
+    const [cambioDispositivo, setCambioDispositivo] = useState(false)
+    const [destinatario, setDestinatario] = useState('')
+    const [identitaVerificata, setIdentitaVerificata] = useState(false)
 
     useEffect(() => {
         if (token) loadSigningData()
@@ -119,11 +126,22 @@ export default function FirmaPage() {
             }
 
             const data = await res.json()
+            if (data.verificaIdentita) {
+                if (data.otpChannel) setOtpChannel(data.otpChannel)
+                setCambioDispositivo(data.cambioDispositivo === true)
+                setModoVerifica(true)
+                setStatus('verifica')
+                return
+            }
+            setModoVerifica(false)
             setSignerName(data.signerName)
             setSignerEmail(data.signerEmail)
             setContract(data.contract)
             if (data.otpChannel) setOtpChannel(data.otpChannel)
-            setOtpRequired(data.otpRequired !== false)
+            // Codice gia' verificato (all'apertura): la firma e' il pulsante.
+            const giaVerificato = data.status === 'otp_verified'
+            setIdentitaVerificata(giaVerificato)
+            setOtpRequired(data.otpRequired !== false && !giaVerificato)
             setGpsRequired(data.gpsRequired === true)
 
             // If customer already consented to marketing, pre-fill and skip the question
@@ -161,6 +179,35 @@ export default function FirmaPage() {
             })
         } catch { /* la firma va avanti lo stesso */ }
         return String(posizione.esito || '')
+    }
+
+    // Codice per aprire il contratto: parte al recapito registrato, che
+    // sceglie il server. Nessun consenso da dare qui: il contratto non si vede.
+    async function handleInviaCodiceVerifica() {
+        setStatus('otp_sending')
+        setError('')
+        try {
+            const res = await fetch('/.netlify/functions/signature-send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, deviceId: idDispositivo() })
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) {
+                if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
+                if (res.status === 410) { setStatus('expired'); return }
+                setError(data.error || 'Errore nell\'invio del codice')
+                setStatus('verifica')
+                return
+            }
+            if (data.channel) setOtpChannel(data.channel)
+            setDestinatario(data.destinatario || '')
+            setStatus('otp_sent')
+            setOtp(['', '', '', '', '', ''])
+        } catch {
+            setError('Errore nell\'invio del codice')
+            setStatus('verifica')
+        }
     }
 
     function consensiDati(): boolean {
@@ -211,6 +258,7 @@ export default function FirmaPage() {
 
             const data = await res.json()
             if (data.channel) setOtpChannel(data.channel)
+            setDestinatario(data.destinatario || '')
 
             setStatus('otp_sent')
             setOtp(['', '', '', '', '', ''])
@@ -230,6 +278,34 @@ export default function FirmaPage() {
 
         setStatus('otp_verifying')
         setError('')
+        if (modoVerifica) {
+            // Codice per aprire il contratto: se e' giusto il server lega il
+            // link a questo dispositivo e la pagina si ricarica con il contratto.
+            try {
+                const res = await fetch('/.netlify/functions/signature-verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, otp: otpCode, deviceId: idDispositivo() })
+                })
+                const data = await res.json().catch(() => ({}))
+                if (!res.ok) {
+                    if (data.code === 'altro_dispositivo') { setStatus('bloccato'); return }
+                    if (data.status === 'revoked') { setStatus('expired'); return }
+                    setError(data.error || 'Codice non valido')
+                    if (data.remainingAttempts !== undefined) setRemainingAttempts(data.remainingAttempts)
+                    setStatus('otp_sent')
+                    return
+                }
+                setOtp(['', '', '', '', '', ''])
+                setRemainingAttempts(5)
+                setStatus('loading')
+                await loadSigningData()
+            } catch {
+                setError('Errore nella verifica del codice')
+                setStatus('otp_sent')
+            }
+            return
+        }
         // Posizione per la firma: parte insieme alla verifica del codice, cosi'
         // e' presa pochi secondi prima della firma senza farla aspettare.
         const posizioneFirma = acquisisciPosizione('firma')
@@ -280,6 +356,7 @@ export default function FirmaPage() {
             if (!res.ok) {
                 const err = await res.json()
                 if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
+                if (err.code === 'verifica_richiesta') { setStatus('loading'); await loadSigningData(); return }
                 setError(err.error)
                 return
             }
@@ -325,13 +402,13 @@ export default function FirmaPage() {
                         <rect x="5" y="11" width="14" height="10" rx="2" />
                         <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
                     </svg>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">NUOVO DISPOSITIVO RILEVATO</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">ACCESSO DA NUOVO DISPOSITIVO</h1>
                     <p className="text-gray-600">
-                        Questo contratto e' gia' associato a un altro dispositivo.
+                        Per motivi di sicurezza, questo contratto e' associato a un altro dispositivo.
                     </p>
                     <p className="text-gray-600 mt-3">
-                        Per motivi di sicurezza e' necessaria una nuova verifica prima di procedere con la firma:
-                        contatta DR7 per ricevere un nuovo link.
+                        E' necessaria una nuova verifica prima di poter procedere con la firma:
+                        contatta DR7 per autorizzare il nuovo dispositivo.
                     </p>
                 </div>
             </div>
@@ -417,6 +494,30 @@ export default function FirmaPage() {
                     </div>
                 )}
 
+                {/* Step 0 (25/09/2026): prima del contratto, il codice inviato
+                    al recapito registrato. Chi ha solo il link si ferma qui. */}
+                {status === 'verifica' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+                        <svg viewBox="0 0 24 24" className="h-10 w-10 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                            <rect x="5" y="11" width="14" height="10" rx="2" />
+                            <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+                        </svg>
+                        <h2 className="text-lg font-bold text-gray-800 mb-2">
+                            {cambioDispositivo ? 'Verifica del nuovo dispositivo' : 'Verifica la tua identita\''}
+                        </h2>
+                        <p className="text-gray-600 text-sm mb-6">
+                            Questo link e' personale. Per aprire il contratto inserisci il codice che DR7 invia
+                            {otpChannel === 'email' ? " all'email" : ' via WhatsApp al numero'} registrato nel contratto.
+                        </p>
+                        <button
+                            onClick={handleInviaCodiceVerifica}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 rounded-lg transition-colors text-lg"
+                        >
+                            Invia il Codice
+                        </button>
+                    </div>
+                )}
+
                 {/* Step 1: dichiarazione, consensi e richiesta OTP.
                     14/09/2026 — tutto quello che il cliente deve accettare sta
                     QUI, prima del codice: il codice OTP e' l'ultimo gesto e
@@ -432,7 +533,9 @@ export default function FirmaPage() {
                                 integralmente il contenuto.
                             </p>
                             <p>
-                                {otpRequired ? (
+                                {identitaVerificata ? (
+                                    <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma il Contratto", dopo la verifica del codice inviato al mio recapito.</>
+                                ) : otpRequired ? (
                                     <>
                                         Confermo che la firma viene apposta volontariamente tramite il codice di verifica
                                         {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
@@ -542,10 +645,10 @@ export default function FirmaPage() {
                         <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Inserisci Codice OTP</h2>
                         <p className="text-gray-600 text-sm mb-6 text-center">
                             {otpChannel === 'whatsapp'
-                                ? 'Abbiamo inviato un codice a 6 cifre via WhatsApp.'
-                                : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
+                                ? `Abbiamo inviato un codice a 6 cifre via WhatsApp${destinatario ? ` a ${destinatario}` : ''}.`
+                                : `Abbiamo inviato un codice a 6 cifre a ${destinatario || signerEmail}`}
                             <br />
-                            <span className="text-gray-500">Inserendolo firmi il documento.</span>
+                            <span className="text-gray-500">{modoVerifica ? 'Inseriscilo per aprire il contratto.' : 'Inserendolo firmi il documento.'}</span>
                         </p>
 
                         <div className="flex justify-center mb-6">
@@ -578,10 +681,12 @@ export default function FirmaPage() {
                                 disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
                                 className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full max-w-xs"
                             >
-                                {status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento'}
+                                {modoVerifica
+                                    ? (status === 'otp_verifying' ? 'Verifica in corso...' : 'Verifica e Apri il Contratto')
+                                    : (status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento')}
                             </button>
                             <button
-                                onClick={handleRequestOtp}
+                                onClick={modoVerifica ? handleInviaCodiceVerifica : handleRequestOtp}
                                 disabled={status === 'otp_verifying'}
                                 className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                             >

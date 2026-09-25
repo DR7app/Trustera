@@ -64,7 +64,10 @@ export const handler: Handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'La richiesta di firma e stata annullata' }) }
         }
 
-        if (sigRequest.status === 'otp_verified') {
+        // daVerificare: il codice serve ad aprire il contratto (primo accesso o
+        // cambio dispositivo autorizzato), anche se la firma poi e' col
+        // pulsante o un altro dispositivo aveva gia' verificato.
+        if (sigRequest.status === 'otp_verified' && !dispositivo.daVerificare) {
             return { statusCode: 400, body: JSON.stringify({ error: 'OTP gia verificato. Procedi con la firma.' }) }
         }
 
@@ -81,7 +84,7 @@ export const handler: Handler = async (event) => {
         // Centralina Pro > Firma del contratto: con l'OTP spento si firma con
         // il pulsante, il codice non serve e non si manda.
         const firma = await leggiFirmaConfig(supabase, sigRequest)
-        if (!firma.otpAttivo) {
+        if (!firma.otpAttivo && !dispositivo.daVerificare) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Per questo documento non serve il codice: firma con il pulsante.', otpRequired: false }) }
         }
 
@@ -331,6 +334,7 @@ export const handler: Handler = async (event) => {
             body: JSON.stringify({
                 success: true,
                 channel,
+                destinatario,
                 message: channel === 'whatsapp' ? 'Codice OTP inviato via WhatsApp' : 'Codice OTP inviato via email',
                 expiresInMinutes: OTP_EXPIRY_MINUTES
             })
