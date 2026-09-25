@@ -32,6 +32,44 @@ function idDispositivo(): string {
     return dispositivoInMemoria
 }
 
+// 25/09/2026: posizione del dispositivo (Geolocation API del browser), chiesta
+// all'apertura e subito prima della firma. Il server la registra cosi' com'e'
+// (netlify/functions/signature-posizione.ts). Rifiutarla non blocca la firma,
+// salvo che Centralina Pro la renda obbligatoria.
+type FasePosizione = 'apertura' | 'firma'
+
+function leggiPosizione(): Promise<Record<string, unknown>> {
+    return new Promise(resolve => {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+            resolve({ esito: 'non_supportata' })
+            return
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve({
+                esito: 'concessa',
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+                timestamp: pos.timestamp,
+            }),
+            err => resolve({
+                esito: err.code === err.PERMISSION_DENIED ? 'negata' : err.code === err.TIMEOUT ? 'timeout' : 'non_disponibile',
+                errore: err.message,
+            }),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        )
+    })
+}
+
+async function statoPermessoPosizione(): Promise<string | null> {
+    try {
+        const p = await navigator.permissions?.query({ name: 'geolocation' as PermissionName })
+        return p?.state || null
+    } catch {
+        return null
+    }
+}
+
 export default function FirmaPage() {
     const { token } = useParams<{ token: string }>()
     const [status, setStatus] = useState<SigningStatus>('loading')
@@ -51,6 +89,8 @@ export default function FirmaPage() {
     // Centralina Pro > Firma del contratto: false = si firma con il pulsante,
     // senza codice.
     const [otpRequired, setOtpRequired] = useState(true)
+    // Centralina Pro > Firma del contratto: posizione obbligatoria per firmare.
+    const [gpsRequired, setGpsRequired] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
     useEffect(() => {
@@ -84,6 +124,7 @@ export default function FirmaPage() {
             setContract(data.contract)
             if (data.otpChannel) setOtpChannel(data.otpChannel)
             setOtpRequired(data.otpRequired !== false)
+            setGpsRequired(data.gpsRequired === true)
 
             // If customer already consented to marketing, pre-fill and skip the question
             if (data.existingMarketingConsent === true) {
@@ -99,11 +140,27 @@ export default function FirmaPage() {
                 setStatus('signed')
             } else {
                 setStatus('viewing')
+                // Prima acquisizione della posizione (apertura del documento).
+                acquisisciPosizione('apertura')
             }
         } catch {
             setError('Impossibile caricare i dati del documento')
             setStatus('error')
         }
+    }
+
+    // Chiede la posizione al browser e la manda al server. Non lancia mai
+    // errori: una posizione mancante non deve rompere la firma.
+    async function acquisisciPosizione(fase: FasePosizione): Promise<string> {
+        const [posizione, permessoStato] = await Promise.all([leggiPosizione(), statoPermessoPosizione()])
+        try {
+            await fetch('/.netlify/functions/signature-posizione', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, deviceId: idDispositivo(), fase, permessoStato, ...posizione })
+            })
+        } catch { /* la firma va avanti lo stesso */ }
+        return String(posizione.esito || '')
     }
 
     function consensiDati(): boolean {
@@ -123,6 +180,8 @@ export default function FirmaPage() {
     async function handleFirmaConPulsante() {
         if (!consensiDati()) return
         setStatus('signing')
+        // Posizione il piu' vicino possibile alla firma.
+        await acquisisciPosizione('firma')
         await eseguiFirma(true)
     }
 
@@ -171,6 +230,9 @@ export default function FirmaPage() {
 
         setStatus('otp_verifying')
         setError('')
+        // Posizione per la firma: parte insieme alla verifica del codice, cosi'
+        // e' presa pochi secondi prima della firma senza farla aspettare.
+        const posizioneFirma = acquisisciPosizione('firma')
         try {
             const res = await fetch('/.netlify/functions/signature-verify-otp', {
                 method: 'POST',
@@ -195,6 +257,7 @@ export default function FirmaPage() {
             // il codice, e inserirlo e' l'atto di firma. Con la conferma in
             // fondo molti si fermavano li' e il contratto restava non firmato.
             setStatus('signing')
+            await posizioneFirma
             await eseguiFirma()
         } catch {
             setError('Errore nella verifica del codice')
@@ -377,6 +440,12 @@ export default function FirmaPage() {
                                 )}
                             </p>
                         </div>
+
+                        <p className="text-xs text-gray-500 mb-4">
+                            {gpsRequired
+                                ? "Per la sicurezza della firma DR7 registra la posizione del dispositivo: autorizzala quando il browser la chiede, senza posizione il documento non puo' essere firmato."
+                                : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
+                        </p>
 
                         <label className="flex items-start gap-3 mb-4 cursor-pointer">
                             <input

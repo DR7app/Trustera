@@ -66,6 +66,33 @@ export const handler: Handler = async (event) => {
             firmaConPulsante = true
         }
 
+        // 25/09/2026 — Posizione obbligatoria (Centralina Pro): serve una
+        // posizione acquisita dalla pagina nella fase "firma" (signature-posizione),
+        // al massimo 10 minuti fa. Mai quella dell'apertura al posto di questa.
+        const configFirma = await leggiFirmaConfig(supabase, sigRequest)
+        if (configFirma.gpsObbligatorio) {
+            const { data: ultimaPosizione } = await supabase
+                .from('signature_audit_trail')
+                .select('event_type, metadata, created_at')
+                .eq('signature_request_id', sigRequest.id)
+                .in('event_type', ['gps_captured', 'gps_permission_denied', 'gps_unavailable'])
+                .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+                .order('created_at', { ascending: false })
+                .limit(10)
+            const posizioneFirma = (ultimaPosizione || []).find((r: any) => r.metadata?.fase === 'firma') || null
+            if (posizioneFirma?.event_type !== 'gps_captured') {
+                await supabase.from('signature_audit_trail').insert({
+                    signature_request_id: sigRequest.id,
+                    event_type: 'security_block',
+                    event_description: "Firma non consentita: la posizione del dispositivo e' obbligatoria (Centralina Pro) e non e' stata autorizzata",
+                    ip_address: ipAddress,
+                    user_agent: userAgent,
+                    metadata: { motivo: 'gps_obbligatorio' },
+                })
+                return { statusCode: 400, body: JSON.stringify({ error: "Per firmare questo documento e' necessario autorizzare la posizione del dispositivo.", code: 'gps_richiesto' }) }
+            }
+        }
+
         if (new Date(sigRequest.token_expires_at) < new Date()) {
             await supabase
                 .from('signature_requests')

@@ -15,9 +15,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type CanaleOtp = 'whatsapp' | 'email'
-export type FirmaConfig = { otpAttivo: boolean; canale: CanaleOtp }
+// gpsObbligatorio (25/09/2026): senza posizione autorizzata non si firma.
+// Spento di default: chi rifiuta la posizione firma lo stesso e l'audit
+// trail lo scrive ("GPS NON AUTORIZZATO DAL CLIENTE").
+export type FirmaConfig = { otpAttivo: boolean; canale: CanaleOtp; gpsObbligatorio: boolean }
 
-const DEFAULT: FirmaConfig = { otpAttivo: true, canale: 'whatsapp' }
+const DEFAULT: FirmaConfig = { otpAttivo: true, canale: 'whatsapp', gpsObbligatorio: false }
 
 // Stessa mappa di DR7-AI netlify/functions/utils/businessConfig.ts
 function rigaBusiness(serviceType?: string | null): string {
@@ -77,6 +80,7 @@ export async function leggiFirmaConfig(
         return {
             otpAttivo: otp === false ? false : true,
             canale: canale === 'email' ? 'email' : 'whatsapp',
+            gpsObbligatorio: voce('gps_obbligatorio') === true,
         }
     } catch (err) {
         console.warn('[firmaConfig] lettura fallita, resta OTP WhatsApp:', (err as Error).message)

@@ -184,6 +184,7 @@ export const handler: Handler = async (event) => {
                 existingMarketingConsent,
                 otpRequired: firma.otpAttivo,
                 otpChannel: firma.canale,
+                gpsRequired: firma.gpsObbligatorio,
                 contract: contract ? {
                     contractNumber: contract.contract_number,
                     pdfUrl: contractPdfUrl,
