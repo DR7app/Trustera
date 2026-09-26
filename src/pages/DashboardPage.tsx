@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { DocumentField } from '../types/fields'
 
 import { PDFDocument } from 'pdf-lib'
+import { percorsoStorage } from '../utils/nomeFileSicuro'
 
 const FieldPlacementEditor = lazy(() => import('../components/FieldPlacementEditor'))
 
@@ -565,7 +566,7 @@ export default function DashboardPage({ session }: { session: Session }) {
       if (editingDraftId && editingDraftPdfUrl) {
         // Editing existing draft — use existing PDF (or re-upload if new file selected)
         if (selectedFile) {
-          const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
+          const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile.name}`)
           const { error: uploadError } = await supabase.storage
             .from('dr7trust')
             .upload(fileName, selectedFile, { contentType: 'application/pdf' })
@@ -579,7 +580,7 @@ export default function DashboardPage({ session }: { session: Session }) {
         docId = editingDraftId
       } else {
         if (!selectedFile) { toast.error('Seleziona un documento'); return }
-        const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
+        const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile.name}`)
         const { error: uploadError } = await supabase.storage
           .from('dr7trust')
           .upload(fileName, selectedFile, { contentType: 'application/pdf' })
@@ -632,7 +633,7 @@ export default function DashboardPage({ session }: { session: Session }) {
         docId = editingDraftId
       } else {
         if (!selectedFile) { toast.error('Seleziona un documento'); return }
-        const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
+        const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile.name}`)
         const { error: uploadError } = await supabase.storage
           .from('dr7trust')
           .upload(fileName, selectedFile, { contentType: 'application/pdf' })
@@ -702,7 +703,7 @@ export default function DashboardPage({ session }: { session: Session }) {
           draft_signers: validSigners.length > 0 ? validSigners : null,
         }
         if (selectedFile) {
-          const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
+          const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile.name}`)
           const { error: uploadError } = await supabase.storage
             .from('dr7trust')
             .upload(fileName, selectedFile, { contentType: 'application/pdf' })
@@ -716,7 +717,7 @@ export default function DashboardPage({ session }: { session: Session }) {
           .eq('id', editingDraftId)
         if (updateError) throw updateError
       } else {
-        const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile!.name}`
+        const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile!.name}`)
         const { error: uploadError } = await supabase.storage
           .from('dr7trust')
           .upload(fileName, selectedFile!, { contentType: 'application/pdf' })
@@ -767,7 +768,7 @@ export default function DashboardPage({ session }: { session: Session }) {
 
     setUploading(true)
     try {
-      const fileName = `documents/${session.user.id}/${Date.now()}_${selectedFile.name}`
+      const fileName = percorsoStorage('documents', session.user.id, `${Date.now()}_${selectedFile.name}`)
       const { error: uploadError } = await supabase.storage
         .from('dr7trust')
         .upload(fileName, selectedFile, { contentType: 'application/pdf' })

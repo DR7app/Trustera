@@ -2,6 +2,7 @@ import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
 import { leggiFirmaConfig } from './utils/firmaConfig'
+import { percorsoStorage } from '../../src/utils/nomeFileSicuro'
 import crypto from 'crypto'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
@@ -17,11 +18,31 @@ const supabaseTrustera = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Ogni firma non riuscita lascia una riga nell'audit trail, con il motivo:
+// lo staff la vede nella scheda della richiesta. Non deve mai far fallire nulla.
+async function registraErroreFirma(richiestaId: string, descrizione: string, ip: string, ua: string) {
+    try {
+        await supabase.from('signature_audit_trail').insert({
+            signature_request_id: richiestaId,
+            event_type: 'errore_firma',
+            event_description: descrizione.slice(0, 1000),
+            ip_address: ip,
+            user_agent: ua,
+            metadata: { fonte: 'signature-complete' },
+        })
+    } catch (e: any) {
+        console.error('[signature-complete] audit errore_firma non scritto:', e?.message)
+    }
+}
+
 export const handler: Handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
     }
 
+    let richiestaId: string | null = null
+    let ipRichiesta = 'unknown'
+    let uaRichiesta = 'unknown'
     try {
         const { token, signatureImage, signatureImage2, marketingConsent, confermaFirma, deviceId } = JSON.parse(event.body || '{}')
 
@@ -42,6 +63,9 @@ export const handler: Handler = async (event) => {
         if (error || !sigRequest) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
+        richiestaId = sigRequest.id
+        ipRichiesta = ipAddress
+        uaRichiesta = userAgent
 
         // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
         const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
@@ -595,15 +619,10 @@ export const handler: Handler = async (event) => {
         const signedPdfHash = crypto.createHash('sha256').update(Buffer.from(signedPdfBytes)).digest('hex')
 
         // Upload signed PDF to Supabase storage
-        // 26/09/2026 — Il nome di un documento libero (es. "Contestazione Danni
-        // Lamborghini Huracán tecnica ") finiva tale e quale nel percorso: accenti
-        // e spazi fanno rifiutare il file allo storage ("Invalid key") e la firma
-        // falliva dopo l'OTP. Nel percorso solo lettere, cifre, - e _.
-        const nomeFileSicuro = String(docIdentifier)
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
-            .slice(0, 80) || 'documento'
-        const fileName = `signed/${nomeFileSicuro}_firmato_${Date.now()}.pdf`
+        // 26/09/2026 — Il nome di un documento libero (es. "Huracán tecnica ")
+        // finiva tale e quale nel percorso e lo storage rifiutava il file: la
+        // chiave passa sempre da percorsoStorage (src/utils/nomeFileSicuro.ts).
+        const fileName = percorsoStorage('signed', `${docIdentifier}_firmato_${Date.now()}.pdf`)
         const { error: uploadError } = await supabase
             .storage
             .from('contracts')
@@ -613,7 +632,13 @@ export const handler: Handler = async (event) => {
             })
 
         if (uploadError) {
-            throw new Error(`Upload failed: ${uploadError.message}`)
+            // Prima questo errore non lasciava traccia: la firma falliva e lo
+            // staff non sapeva perche'. Ora finisce nell'audit trail.
+            await registraErroreFirma(sigRequest.id, `Salvataggio del PDF firmato non riuscito (${fileName}): ${uploadError.message}`, ipAddress, userAgent)
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: 'Non e stato possibile salvare il documento firmato. La firma non e stata registrata: riprova tra qualche istante o contatta DR7.', details: uploadError.message })
+            }
         }
 
         const { data: publicUrl } = supabase.storage.from('contracts').getPublicUrl(fileName)
@@ -934,6 +959,9 @@ export const handler: Handler = async (event) => {
         }
     } catch (error: any) {
         console.error('Error in signature-complete:', error)
+        if (richiestaId) {
+            await registraErroreFirma(richiestaId, `Errore durante la firma: ${error?.message || String(error)}`, ipRichiesta, uaRichiesta)
+        }
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Errore nella firma del documento', details: error.message })

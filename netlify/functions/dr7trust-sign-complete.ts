@@ -4,6 +4,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { Resend } from 'resend'
 import crypto from 'crypto'
 import QRCode from 'qrcode'
+import { percorsoStorage } from '../../src/utils/nomeFileSicuro'
 
 // DR7 Trust Supabase — primary
 const supabase = createClient(
@@ -643,14 +644,16 @@ export const handler: Handler = async (event) => {
       const signedPdfBytes = await buildSignedPdf(pdfBytes, attestationSigners, doc.name, originalHash, fieldEntries, doc.source)
 
       // Upload signed PDF to storage
-      const fileName = `signed/${doc.id}_signed_${Date.now()}.pdf`
+      const fileName = percorsoStorage('signed', `${doc.id}_signed_${Date.now()}.pdf`)
       const { error: uploadError } = await supabase.storage
         .from('dr7trust')
         .upload(fileName, Buffer.from(signedPdfBytes), { contentType: 'application/pdf' })
 
       if (uploadError) {
         console.error('[dr7trust-sign-complete] Upload failed:', uploadError.message)
-        throw uploadError
+        // 26/09/2026: una firma fallita deve lasciare il motivo nell'audit trail.
+        await logAudit(doc.id, 'errore_firma', undefined, ip, userAgent, { errore: `Salvataggio del PDF firmato non riuscito (${fileName}): ${uploadError.message}` })
+        return { statusCode: 500, body: JSON.stringify({ error: 'Non e stato possibile salvare il documento firmato. La firma non e stata registrata: riprova tra qualche istante o contatta DR7.', details: uploadError.message }) }
       }
 
       const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
@@ -876,14 +879,16 @@ export const handler: Handler = async (event) => {
     )
 
     // Upload signed PDF
-    const fileName = `signed/${doc.id}_signed_${Date.now()}.pdf`
+    const fileName = percorsoStorage('signed', `${doc.id}_signed_${Date.now()}.pdf`)
     const { error: uploadError } = await supabase.storage
       .from('dr7trust')
       .upload(fileName, Buffer.from(signedPdfBytes), { contentType: 'application/pdf' })
 
     if (uploadError) {
       console.error('[dr7trust-sign-complete] Upload failed (legacy):', uploadError.message)
-      throw uploadError
+      // 26/09/2026: una firma fallita deve lasciare il motivo nell'audit trail.
+      await logAudit(doc.id, 'errore_firma', doc.signer_email, ip, userAgent, { errore: `Salvataggio del PDF firmato non riuscito (${fileName}): ${uploadError.message}` })
+      return { statusCode: 500, body: JSON.stringify({ error: 'Non e stato possibile salvare il documento firmato. La firma non e stata registrata: riprova tra qualche istante o contatta DR7.', details: uploadError.message }) }
     }
 
     const { data: { publicUrl } } = supabase.storage.from('dr7trust').getPublicUrl(fileName)
