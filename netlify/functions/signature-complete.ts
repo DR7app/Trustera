@@ -595,7 +595,15 @@ export const handler: Handler = async (event) => {
         const signedPdfHash = crypto.createHash('sha256').update(Buffer.from(signedPdfBytes)).digest('hex')
 
         // Upload signed PDF to Supabase storage
-        const fileName = `signed/${docIdentifier}_firmato_${Date.now()}.pdf`
+        // 26/09/2026 — Il nome di un documento libero (es. "Contestazione Danni
+        // Lamborghini Huracán tecnica ") finiva tale e quale nel percorso: accenti
+        // e spazi fanno rifiutare il file allo storage ("Invalid key") e la firma
+        // falliva dopo l'OTP. Nel percorso solo lettere, cifre, - e _.
+        const nomeFileSicuro = String(docIdentifier)
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
+            .slice(0, 80) || 'documento'
+        const fileName = `signed/${nomeFileSicuro}_firmato_${Date.now()}.pdf`
         const { error: uploadError } = await supabase
             .storage
             .from('contracts')
