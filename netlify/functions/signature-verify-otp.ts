@@ -105,10 +105,15 @@ export const handler: Handler = async (event) => {
         const ipAddress = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown'
         const userAgent = event.headers['user-agent'] || 'unknown'
 
+        // 01/10/2026: otp_verified_at scritto alla verifica. Prima restava
+        // vuoto e non si sapeva da quanto il codice era verificato (vedi
+        // utils/verificaOtp.ts: finestra per completare la firma).
+        const verificatoAt = new Date().toISOString()
         await supabase
             .from('signature_requests')
             .update({
                 status: 'otp_verified',
+                otp_verified_at: verificatoAt,
                 signer_ip: ipAddress,
                 signer_user_agent: userAgent,
                 otp_code: null, // Clear OTP for security
@@ -123,7 +128,7 @@ export const handler: Handler = async (event) => {
             event_description: `Codice OTP verificato con successo da ${sigRequest.signer_email}`,
             ip_address: ipAddress,
             user_agent: userAgent,
-            metadata: { verified_at: new Date().toISOString() }
+            metadata: { verified_at: verificatoAt }
         })
 
         return {

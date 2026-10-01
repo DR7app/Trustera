@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
-type SigningStatus = 'loading' | 'viewing' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
+type SigningStatus = 'loading' | 'viewing' | 'da_completare' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
 
 interface ContractInfo {
     contractNumber: string
@@ -91,6 +91,10 @@ export default function FirmaPage() {
     const [otpRequired, setOtpRequired] = useState(true)
     // Centralina Pro > Firma del contratto: posizione obbligatoria per firmare.
     const [gpsRequired, setGpsRequired] = useState(false)
+    // 01/10/2026: codice gia' verificato ma firma non completata (errore dopo
+    // l'OTP, pagina chiusa). Il server dice se la verifica vale ancora
+    // (netlify/functions/utils/verificaOtp.ts).
+    const [otpVerificatoValido, setOtpVerificatoValido] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
     useEffect(() => {
@@ -125,6 +129,7 @@ export default function FirmaPage() {
             if (data.otpChannel) setOtpChannel(data.otpChannel)
             setOtpRequired(data.otpRequired !== false)
             setGpsRequired(data.gpsRequired === true)
+            setOtpVerificatoValido(data.otpVerificatoValido === true)
 
             // If customer already consented to marketing, pre-fill and skip the question
             if (data.existingMarketingConsent === true) {
@@ -138,6 +143,12 @@ export default function FirmaPage() {
                 setSignedPdfUrl(data.signedPdfUrl)
                 setSignedAt(data.signedAt)
                 setStatus('signed')
+            } else if (data.status === 'otp_verified' && data.otpVerificatoValido === true) {
+                // 01/10/2026: codice gia' verificato, firma da completare.
+                // Prima la pagina tornava a "Invia codice", il server
+                // rispondeva "OTP gia verificato" e nessun bottone firmava.
+                setStatus('da_completare')
+                acquisisciPosizione('apertura')
             } else {
                 setStatus('viewing')
                 // Prima acquisizione della posizione (apertura del documento).
@@ -204,7 +215,15 @@ export default function FirmaPage() {
                 // La config e' cambiata dopo l'apertura della pagina: si passa
                 // al pulsante invece di lasciare il cliente bloccato.
                 if (err.otpRequired === false) setOtpRequired(false)
-                setError(err.error)
+                // 01/10/2026: codice gia' verificato da poco: si completa la
+                // firma invece di restare su "Invia codice".
+                if (err.code === 'otp_gia_verificato') {
+                    setOtpVerificatoValido(true)
+                    setError('')
+                    setStatus('da_completare')
+                    return
+                }
+                setError(err.error || 'Impossibile inviare il codice. Riprova.')
                 setStatus('viewing')
                 return
             }
@@ -256,6 +275,7 @@ export default function FirmaPage() {
             // dopo: il cliente ha gia' accettato i termini prima di chiedere
             // il codice, e inserirlo e' l'atto di firma. Con la conferma in
             // fondo molti si fermavano li' e il contratto restava non firmato.
+            setOtpVerificatoValido(true)
             setStatus('signing')
             await posizioneFirma
             await eseguiFirma()
@@ -263,6 +283,20 @@ export default function FirmaPage() {
             setError('Errore nella verifica del codice')
             setStatus('otp_sent')
         }
+    }
+
+    // 01/10/2026: completa una firma il cui codice e' gia' stato verificato
+    // (anche dopo aver riaperto il link) o riprova dopo un errore. Il server
+    // accetta solo se la verifica e' ancora valida, altrimenti chiede un
+    // codice nuovo (code 'otp_scaduto').
+    async function handleCompletaFirma() {
+        if (!consensiDati()) return
+        setError('')
+        setStatus('signing')
+        // Posizione il piu' vicino possibile alla firma (obbligatoria se
+        // Centralina Pro lo chiede: il server la vuole degli ultimi 10 minuti).
+        await acquisisciPosizione('firma')
+        await eseguiFirma(!otpRequired)
     }
 
     // Firma vera e propria. La chiama la verifica OTP appena il codice e'
@@ -278,9 +312,21 @@ export default function FirmaPage() {
             })
 
             if (!res.ok) {
-                const err = await res.json()
+                const err = await res.json().catch(() => ({}))
                 if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
-                setError(err.error)
+                if (res.status === 410) { setStatus('expired'); return }
+                // 01/10/2026: verifica del codice scaduta: si torna al primo
+                // passo, "Invia Codice di Verifica" manda un codice nuovo.
+                if (err.code === 'otp_scaduto') {
+                    setOtpVerificatoValido(false)
+                    setError(err.error || "Il codice di verifica e' scaduto. Richiedi un nuovo codice.")
+                    setStatus('viewing')
+                    return
+                }
+                // 01/10/2026: mai lasciare la schermata su "Firma in corso":
+                // con un errore la scheda mostra il messaggio e "Riprova la firma".
+                setError(err.error || 'Firma non completata. Riprova.')
+                setStatus('signing')
                 return
             }
 
@@ -289,7 +335,8 @@ export default function FirmaPage() {
             setSignedAt(data.signedAt)
             setStatus('signed')
         } catch {
-            setError('Errore durante la firma del documento')
+            setError('Errore durante la firma del documento. Riprova.')
+            setStatus('signing')
         }
     }
 
@@ -347,6 +394,61 @@ export default function FirmaPage() {
             </div>
         )
     }
+
+    // Termini + risposta marketing: nel primo passo e, dal 01/10/2026, anche
+    // in "Completa la firma" (la risposta va col completamento e dopo una
+    // riapertura del link non e' piu' in memoria).
+    const bloccoConsensi = (
+        <>
+                <label className="flex items-start gap-3 mb-4 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={e => setAcceptedTerms(e.target.checked)}
+                        className="mt-1 h-5 w-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                        Confermo che i dati inseriti sono corretti e accetto i termini e le condizioni del documento.
+                    </span>
+                </label>
+
+                {existingMarketingConsent !== true && (
+                    <div className="mb-6">
+                        <p className="text-sm text-gray-700 mb-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowMarketingInfo(true)}
+                                className="underline text-yellow-700 hover:text-yellow-800 transition-colors"
+                            >
+                                Accetto vantaggi, offerte e sconti dedicati da DR7 Trust e partner.
+                            </button>
+                        </p>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="marketing"
+                                    checked={acceptedMarketing === true}
+                                    onChange={() => setAcceptedMarketing(true)}
+                                    className="h-5 w-5 text-yellow-600 focus:ring-yellow-500"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Si</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="marketing"
+                                    checked={acceptedMarketing === false}
+                                    onChange={() => setAcceptedMarketing(false)}
+                                    className="h-5 w-5 text-yellow-600 focus:ring-yellow-500"
+                                />
+                                <span className="text-sm font-medium text-gray-700">No</span>
+                            </label>
+                        </div>
+                    </div>
+                )}
+        </>
+    )
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -447,53 +549,7 @@ export default function FirmaPage() {
                                 : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
                         </p>
 
-                        <label className="flex items-start gap-3 mb-4 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={acceptedTerms}
-                                onChange={e => setAcceptedTerms(e.target.checked)}
-                                className="mt-1 h-5 w-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
-                            />
-                            <span className="text-sm text-gray-700">
-                                Confermo che i dati inseriti sono corretti e accetto i termini e le condizioni del documento.
-                            </span>
-                        </label>
-
-                        {existingMarketingConsent !== true && (
-                            <div className="mb-6">
-                                <p className="text-sm text-gray-700 mb-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowMarketingInfo(true)}
-                                        className="underline text-yellow-700 hover:text-yellow-800 transition-colors"
-                                    >
-                                        Accetto vantaggi, offerte e sconti dedicati da DR7 Trust e partner.
-                                    </button>
-                                </p>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="marketing"
-                                            checked={acceptedMarketing === true}
-                                            onChange={() => setAcceptedMarketing(true)}
-                                            className="h-5 w-5 text-yellow-600 focus:ring-yellow-500"
-                                        />
-                                        <span className="text-sm font-medium text-gray-700">Si</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="marketing"
-                                            checked={acceptedMarketing === false}
-                                            onChange={() => setAcceptedMarketing(false)}
-                                            className="h-5 w-5 text-yellow-600 focus:ring-yellow-500"
-                                        />
-                                        <span className="text-sm font-medium text-gray-700">No</span>
-                                    </label>
-                                </div>
-                            </div>
-                        )}
+                        {bloccoConsensi}
 
                         {otpRequired ? (
                             <>
@@ -524,6 +580,28 @@ export default function FirmaPage() {
                                 </button>
                             </>
                         )}
+                    </div>
+                )}
+
+                {/* 01/10/2026: codice gia' verificato, firma non completata
+                    (errore dopo l'OTP o pagina chiusa). Un solo bottone completa
+                    la firma; il server la accetta solo se la verifica e' ancora
+                    valida (netlify/functions/utils/verificaOtp.ts). */}
+                {status === 'da_completare' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Completa la firma</h2>
+                        <p className="text-gray-600 text-sm mb-6 text-center">
+                            Il codice di verifica e' gia' stato confermato ma la firma non e' stata completata.
+                            Premi il pulsante per completarla, non serve un nuovo codice.
+                        </p>
+                        {bloccoConsensi}
+                        <button
+                            onClick={handleCompletaFirma}
+                            disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
+                        >
+                            Completa la firma
+                        </button>
                     </div>
                 )}
 
@@ -600,10 +678,10 @@ export default function FirmaPage() {
                             <>
                                 <h2 className="text-lg font-bold text-gray-800 mb-2">Firma non completata</h2>
                                 <p className="text-gray-600 text-sm mb-6">
-                                    {otpRequired ? "Il codice e' stato verificato. Riprova a completare la firma." : 'Riprova a completare la firma.'}
+                                    {otpRequired && otpVerificatoValido ? "Il codice e' stato verificato: riprova a completare la firma, non serve un nuovo codice." : 'Riprova a completare la firma.'}
                                 </p>
                                 <button
-                                    onClick={() => eseguiFirma(!otpRequired)}
+                                    onClick={handleCompletaFirma}
                                     className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
                                 >
                                     Riprova la firma

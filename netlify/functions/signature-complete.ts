@@ -2,6 +2,7 @@ import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
 import { leggiFirmaConfig } from './utils/firmaConfig'
+import { otpVerificatoAncoraValido, OTP_VERIFICATO_VALIDO_MINUTI } from './utils/verificaOtp'
 import { percorsoStorage } from '../../src/utils/nomeFileSicuro'
 import crypto from 'crypto'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
@@ -81,6 +82,12 @@ export const handler: Handler = async (event) => {
         // Contratto": lo decide il server rileggendo la config, non la pagina,
         // cosi' nessuno salta il codice quando e' richiesto.
         let firmaConPulsante = false
+        // 01/10/2026: un codice verificato vale OTP_VERIFICATO_VALIDO_MINUTI
+        // (utils/verificaOtp.ts). Oltre, o senza otp_verified_at, si chiede un
+        // codice nuovo: signature-send-otp lo rimanda per queste righe.
+        if (sigRequest.status === 'otp_verified' && !otpVerificatoAncoraValido(sigRequest)) {
+            return { statusCode: 401, body: JSON.stringify({ error: `Il codice di verifica e' scaduto (valido ${OTP_VERIFICATO_VALIDO_MINUTI} minuti). Richiedi un nuovo codice per firmare.`, code: 'otp_scaduto' }) }
+        }
         if (sigRequest.status !== 'otp_verified') {
             const firma = await leggiFirmaConfig(supabase, sigRequest)
             const statoFirmabile = sigRequest.status === 'pending' || sigRequest.status === 'otp_sent'

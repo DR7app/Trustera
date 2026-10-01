@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
 import { Resend } from 'resend'
 import { leggiFirmaConfig } from './utils/firmaConfig'
+import { otpVerificatoAncoraValido, OTP_VERIFICATO_VALIDO_MINUTI } from './utils/verificaOtp'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -61,8 +62,16 @@ export const handler: Handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'La richiesta di firma e stata annullata' }) }
         }
 
+        // 01/10/2026: codice gia' verificato. Se la verifica e' recente il
+        // cliente completa la firma senza nuovo codice (code 'otp_gia_verificato',
+        // la pagina passa a "Completa la firma"). Se e' piu' vecchia di
+        // OTP_VERIFICATO_VALIDO_MINUTI si manda un codice nuovo: prima qui si
+        // rispondeva sempre 400 e la richiesta restava bloccata per sempre.
+        if (sigRequest.status === 'otp_verified' && otpVerificatoAncoraValido(sigRequest)) {
+            return { statusCode: 409, body: JSON.stringify({ error: 'Codice gia\' verificato. Completa la firma.', code: 'otp_gia_verificato' }) }
+        }
         if (sigRequest.status === 'otp_verified') {
-            return { statusCode: 400, body: JSON.stringify({ error: 'OTP gia verificato. Procedi con la firma.' }) }
+            console.log(`[signature-send-otp] Verifica OTP piu' vecchia di ${OTP_VERIFICATO_VALIDO_MINUTI} minuti o senza data: nuovo codice per ${sigRequest.id}`)
         }
 
         if (sigRequest.otp_attempts >= MAX_OTP_ATTEMPTS) {

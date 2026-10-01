@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
+import { otpVerificatoAncoraValido } from './utils/verificaOtp'
 import { leggiFirmaConfig } from './utils/firmaConfig'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
@@ -24,7 +25,7 @@ export const handler: Handler = async (event) => {
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id')
+            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, otp_verified_at')
             .eq('token', token)
             .single()
 
@@ -185,6 +186,10 @@ export const handler: Handler = async (event) => {
                 otpRequired: firma.otpAttivo,
                 otpChannel: firma.canale,
                 gpsRequired: firma.gpsObbligatorio,
+                // 01/10/2026: codice gia' verificato ma firma non completata
+                // (errore dopo l'OTP). true = la pagina offre "Completa la
+                // firma" senza nuovo codice; false = serve un codice nuovo.
+                otpVerificatoValido: otpVerificatoAncoraValido(sigRequest),
                 contract: contract ? {
                     contractNumber: contract.contract_number,
                     pdfUrl: contractPdfUrl,
