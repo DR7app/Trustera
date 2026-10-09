@@ -88,10 +88,9 @@ export default function FirmaPage() {
     const [acceptedMarketing, setAcceptedMarketing] = useState<boolean | null>(true)
     const [existingMarketingConsent, setExistingMarketingConsent] = useState<boolean | null>(null)
     const [showMarketingInfo, setShowMarketingInfo] = useState(false)
-    // 09/10/2026: "Riepilogo firma" prima del gesto che firma (invio del
-    // codice, pulsante, completamento): ripete le frasi delle due caselle e
-    // l'azione parte solo con "Accetta".
-    const [riepilogoFirma, setRiepilogoFirma] = useState<(() => void) | null>(null)
+    // 09/10/2026: FIRMA (barra in basso) apre il "Riepilogo firma" con le due
+    // caselle; la firma parte solo con "Accetta".
+    const [riepilogoAperto, setRiepilogoAperto] = useState(false)
     const [otpChannel, setOtpChannel] = useState<'whatsapp' | 'email' | null>(null)
     // Centralina Pro > Firma del contratto: false = si firma con il pulsante,
     // senza codice.
@@ -193,16 +192,19 @@ export default function FirmaPage() {
         return true
     }
 
-    function apriRiepilogo(azione: () => void) {
-        if (!consensiDati()) return
+    function apriRiepilogo() {
         setError('')
-        setRiepilogoFirma(() => azione)
+        setRiepilogoAperto(true)
     }
 
+    // Accetta: codice gia' verificato = completa la firma; OTP spento = firma
+    // col pulsante; altrimenti manda il codice (si apre il popup del codice).
     function accettaRiepilogo() {
-        const azione = riepilogoFirma
-        setRiepilogoFirma(null)
-        azione?.()
+        if (!consensiDati()) return
+        setRiepilogoAperto(false)
+        if (status === 'da_completare') handleCompletaFirma()
+        else if (!otpRequired) handleFirmaConPulsante()
+        else handleRequestOtp()
     }
 
     // OTP spento in Centralina Pro: il pulsante "Firma il Contratto" e' l'atto
@@ -485,7 +487,7 @@ export default function FirmaPage() {
                 <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">Firma Elettronica</span>
             </div>
 
-            <div className="max-w-2xl mx-auto p-3 sm:p-6">
+            <div className="max-w-2xl mx-auto p-3 sm:p-6 pb-28 sm:pb-28">
                 {/* Contract Info Card */}
                 {contract && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
@@ -544,91 +546,39 @@ export default function FirmaPage() {
                     </div>
                 )}
 
-                {/* Step 1: dichiarazione, consensi e richiesta OTP.
-                    14/09/2026 — tutto quello che il cliente deve accettare sta
-                    QUI, prima del codice: il codice OTP e' l'ultimo gesto e
-                    firma da solo. */}
-                {status === 'viewing' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 text-center">Firma il Documento</h2>
-
-                        <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-gray-700">
-                            <p className="mb-2">
-                                Io, <strong>{signerName}</strong>, dichiaro di aver preso visione del documento
-                                {contract?.contractNumber ? ` n. ${contract.contractNumber}` : ''} e di approvarne
-                                integralmente il contenuto.
+                {/* Step 1 (09/10/2026, come le firme delle finanziarie): il
+                    documento resta a tutta pagina e in basso c'e' una barra
+                    fissa col pulsante rosso FIRMA. FIRMA apre il Riepilogo
+                    firma con le due caselle; Accetta manda il codice (o firma
+                    col pulsante se l'OTP e' spento in Centralina Pro). */}
+                {(status === 'viewing' || status === 'da_completare') && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 text-sm text-gray-700">
+                        {status === 'da_completare' && (
+                            <p className="mb-3 font-semibold text-gray-800">
+                                Il codice di verifica e' gia' stato confermato ma la firma non e' stata completata.
+                                Premi FIRMA per completarla, non serve un nuovo codice.
                             </p>
-                            <p>
-                                {otpRequired ? (
-                                    <>
-                                        Confermo che la firma viene apposta volontariamente tramite il codice di verifica
-                                        {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
-                                    </>
-                                ) : (
-                                    <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma il Contratto".</>
-                                )}
-                            </p>
-                        </div>
-
-                        <p className="text-xs text-gray-500 mb-4">
+                        )}
+                        <p className="mb-2">
+                            Io, <strong>{signerName}</strong>, dichiaro di aver preso visione del documento
+                            {contract?.contractNumber ? ` n. ${contract.contractNumber}` : ''} e di approvarne
+                            integralmente il contenuto.
+                        </p>
+                        <p className="mb-3">
+                            {otpRequired ? (
+                                <>
+                                    Confermo che la firma viene apposta volontariamente tramite il codice di verifica
+                                    {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
+                                </>
+                            ) : (
+                                <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma".</>
+                            )}
+                        </p>
+                        <p className="text-xs text-gray-500">
                             {gpsRequired
                                 ? "Per la sicurezza della firma DR7 registra la posizione del dispositivo: autorizzala quando il browser la chiede, senza posizione il documento non puo' essere firmato."
                                 : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
                         </p>
-
-                        {bloccoConsensi}
-
-                        {otpRequired ? (
-                            <>
-                                <p className="text-gray-600 text-sm mb-4 text-center">
-                                    {otpChannel === 'email'
-                                        ? `Riceverai un codice a 6 cifre via email a ${signerEmail}: inserendolo il documento risulta firmato.`
-                                        : 'Riceverai un codice a 6 cifre via WhatsApp: inserendolo il documento risulta firmato.'}
-                                </p>
-                                <button
-                                    onClick={() => apriRiepilogo(handleRequestOtp)}
-                                    disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
-                                    className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
-                                >
-                                    Invia Codice di Verifica
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-gray-600 text-sm mb-4 text-center">
-                                    Premendo il pulsante il documento risulta firmato.
-                                </p>
-                                <button
-                                    onClick={() => apriRiepilogo(handleFirmaConPulsante)}
-                                    disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
-                                    className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
-                                >
-                                    Firma il Contratto
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* 01/10/2026: codice gia' verificato, firma non completata
-                    (errore dopo l'OTP o pagina chiusa). Un solo bottone completa
-                    la firma; il server la accetta solo se la verifica e' ancora
-                    valida (netlify/functions/utils/verificaOtp.ts). */}
-                {status === 'da_completare' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Completa la firma</h2>
-                        <p className="text-gray-600 text-sm mb-6 text-center">
-                            Il codice di verifica e' gia' stato confermato ma la firma non e' stata completata.
-                            Premi il pulsante per completarla, non serve un nuovo codice.
-                        </p>
-                        {bloccoConsensi}
-                        <button
-                            onClick={() => apriRiepilogo(handleCompletaFirma)}
-                            disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
-                        >
-                            Completa la firma
-                        </button>
                     </div>
                 )}
 
@@ -781,41 +731,55 @@ export default function FirmaPage() {
                 <span className="block sm:inline">P.IVA 04104640927</span>
             </div>
 
-            {/* Riepilogo firma: le frasi delle due caselle, poi "Accetta".
-                La frase marketing compare solo se il cliente ha detto Si. */}
-            {riepilogoFirma && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setRiepilogoFirma(null)}>
-                    <div role="dialog" aria-modal="true" aria-labelledby="riepilogo-firma-titolo" className="bg-white rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6" onClick={e => e.stopPropagation()}>
-                        <h3 id="riepilogo-firma-titolo" className="text-base sm:text-lg font-bold text-gray-800 mb-4">
-                            Riepilogo firma
-                        </h3>
-                        <ul className="text-sm text-gray-700 space-y-3 mb-6">
-                            <li className="flex items-start gap-3">
-                                <svg viewBox="0 0 20 20" className="h-5 w-5 mt-0.5 shrink-0 text-yellow-600" fill="currentColor" aria-hidden="true">
-                                    <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0z" clipRule="evenodd" />
-                                </svg>
-                                <span>{TESTO_TERMINI}</span>
-                            </li>
-                            {acceptedMarketing === true && (
-                                <li className="flex items-start gap-3">
-                                    <svg viewBox="0 0 20 20" className="h-5 w-5 mt-0.5 shrink-0 text-yellow-600" fill="currentColor" aria-hidden="true">
-                                        <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0z" clipRule="evenodd" />
-                                    </svg>
-                                    <span>{TESTO_MARKETING}</span>
-                                </li>
-                            )}
-                        </ul>
-                        <div className="flex flex-col-reverse sm:flex-row gap-3">
+            {/* Barra fissa in basso col pulsante rosso FIRMA. */}
+            {(status === 'viewing' || status === 'da_completare') && (
+                <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    <div className="max-w-2xl mx-auto">
+                        <button
+                            onClick={apriRiepilogo}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-colors text-lg tracking-wide"
+                        >
+                            FIRMA
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Riepilogo firma: le due caselle, poi "Accetta". */}
+            {riepilogoAperto && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setRiepilogoAperto(false)}>
+                    <div role="dialog" aria-modal="true" aria-labelledby="riepilogo-firma-titolo" className="bg-white rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-200">
+                            <h3 id="riepilogo-firma-titolo" className="text-lg font-bold text-gray-800">
+                                Riepilogo firma
+                            </h3>
                             <button
-                                onClick={() => setRiepilogoFirma(null)}
-                                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 rounded-lg transition-colors"
+                                type="button"
+                                onClick={() => setRiepilogoAperto(false)}
+                                aria-label="Chiudi"
+                                className="text-gray-500 hover:text-gray-800 transition-colors"
+                            >
+                                <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                                    <path d="M5 5l10 10M15 5L5 15" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="px-5 pt-5">
+                            {bloccoConsensi}
+                        </div>
+                        <div className="flex gap-3 px-5 py-4 bg-gray-50 border-t border-gray-200">
+                            <button
+                                type="button"
+                                onClick={() => setRiepilogoAperto(false)}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors"
                             >
                                 Annulla
                             </button>
                             <button
+                                type="button"
                                 onClick={accettaRiepilogo}
-                                autoFocus
-                                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-lg transition-colors"
+                                disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
+                                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
                             >
                                 Accetta
                             </button>
