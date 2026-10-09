@@ -259,6 +259,14 @@ export default function FirmaPage() {
         }
     }
 
+    // Chiude il popup del codice e torna al primo passo: "Invia Codice di
+    // Verifica" ne manda uno nuovo.
+    function annullaOtp() {
+        setOtp(['', '', '', '', '', ''])
+        setError('')
+        setStatus('viewing')
+    }
+
     async function handleVerifyOtp() {
         const otpCode = otp.join('')
         if (otpCode.length !== 6) {
@@ -631,57 +639,90 @@ export default function FirmaPage() {
                     </div>
                 )}
 
-                {/* Step 2: Enter OTP */}
+                {/* Step 2: il codice OTP si inserisce in un popup (09/10/2026,
+                    sul modello delle firme con OTP delle finanziarie). Annulla
+                    torna al primo passo; inserire il codice firma il documento. */}
                 {(status === 'otp_sent' || status === 'otp_verifying') && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-bold text-gray-800 mb-2 text-center">Inserisci Codice OTP</h2>
-                        <p className="text-gray-600 text-sm mb-6 text-center">
-                            {otpChannel === 'whatsapp'
-                                ? 'Abbiamo inviato un codice a 6 cifre via WhatsApp.'
-                                : `Abbiamo inviato un codice a 6 cifre a ${signerEmail}`}
-                            <br />
-                            <span className="text-gray-500">Inserendolo firmi il documento.</span>
-                        </p>
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div role="dialog" aria-modal="true" aria-labelledby="otp-titolo" className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
+                            <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-200">
+                                <h3 id="otp-titolo" className="text-lg font-bold text-gray-800">
+                                    {otpChannel === 'email' ? 'Firma con codice via email' : 'Firma con codice WhatsApp'}
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={annullaOtp}
+                                    disabled={status === 'otp_verifying'}
+                                    aria-label="Chiudi"
+                                    className="text-gray-500 hover:text-gray-800 disabled:opacity-40 transition-colors"
+                                >
+                                    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                                        <path d="M5 5l10 10M15 5L5 15" strokeLinecap="round" />
+                                    </svg>
+                                </button>
+                            </div>
 
-                        <div className="flex justify-center mb-6">
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                value={otp.join('')}
-                                onChange={e => {
-                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
-                                    setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
-                                }}
-                                placeholder="Inserisci il codice a 6 cifre"
-                                className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
-                                disabled={status === 'otp_verifying'}
-                                autoFocus
-                            />
-                        </div>
+                            <div className="px-5 py-6 text-center">
+                                <p className="text-gray-700 mb-5">
+                                    {otpChannel === 'email'
+                                        ? `Inserisci il codice di conferma ricevuto via email a ${signerEmail} per confermare la firma e completare il processo.`
+                                        : 'Inserisci il codice di conferma ricevuto via WhatsApp per confermare la firma e completare il processo.'}
+                                </p>
 
-                        {remainingAttempts < 5 && (
-                            <p className="text-center text-sm text-orange-600 mb-4">
-                                Tentativi rimanenti: {remainingAttempts}
-                            </p>
-                        )}
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    maxLength={6}
+                                    value={otp.join('')}
+                                    onChange={e => {
+                                        const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
+                                        setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
+                                    }}
+                                    onKeyDown={e => { if (e.key === 'Enter' && otp.join('').length === 6) handleVerifyOtp() }}
+                                    placeholder="Codice a 6 cifre"
+                                    className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] bg-gray-50 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-2 focus:ring-red-100 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
+                                    disabled={status === 'otp_verifying'}
+                                    autoFocus
+                                />
 
-                        <div className="flex flex-col gap-3 items-center">
-                            <button
-                                onClick={handleVerifyOtp}
-                                disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
-                                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg transition-colors w-full max-w-xs"
-                            >
-                                {status === 'otp_verifying' ? 'Firma in corso...' : 'Firma il Documento'}
-                            </button>
-                            <button
-                                onClick={handleRequestOtp}
-                                disabled={status === 'otp_verifying'}
-                                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Non hai ricevuto il codice? Invia di nuovo
-                            </button>
+                                {error && (
+                                    <p className="mt-4 text-sm text-red-700">{error}</p>
+                                )}
+                                {remainingAttempts < 5 && (
+                                    <p className="mt-2 text-sm text-orange-600">
+                                        Tentativi rimanenti: {remainingAttempts}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={handleRequestOtp}
+                                    disabled={status === 'otp_verifying'}
+                                    className="mt-5 text-sm font-semibold italic underline text-gray-700 hover:text-gray-900 disabled:opacity-40 transition-colors"
+                                >
+                                    Invia di nuovo
+                                </button>
+                            </div>
+
+                            <div className="flex gap-3 px-5 py-4 bg-gray-50 border-t border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={annullaOtp}
+                                    disabled={status === 'otp_verifying'}
+                                    className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 disabled:opacity-40 font-bold py-3 rounded-lg transition-colors"
+                                >
+                                    Annulla
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleVerifyOtp}
+                                    disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
+                                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
+                                >
+                                    {status === 'otp_verifying' ? 'Firma in corso...' : 'Conferma'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
