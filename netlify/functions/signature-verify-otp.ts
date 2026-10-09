@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
+import { richiestaChiusa, rispostaRichiestaChiusa, STATI_APERTI } from './utils/richiestaChiusa'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -30,6 +31,9 @@ export const handler: Handler = async (event) => {
         if (error || !sigRequest) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
+
+        // Link sostituito da un rinvio, annullato o scaduto: mai riaprirlo (utils/richiestaChiusa.ts).
+        if (richiestaChiusa(sigRequest.status)) return rispostaRichiestaChiusa(sigRequest.status)
 
         // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
         const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
@@ -120,6 +124,7 @@ export const handler: Handler = async (event) => {
                 updated_at: new Date().toISOString()
             })
             .eq('id', sigRequest.id)
+            .in('status', STATI_APERTI)
 
         // Log audit
         await supabase.from('signature_audit_trail').insert({

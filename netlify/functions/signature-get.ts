@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
 import { otpVerificatoAncoraValido } from './utils/verificaOtp'
 import { leggiFirmaConfig } from './utils/firmaConfig'
+import { richiestaChiusa, rispostaRichiestaChiusa } from './utils/richiestaChiusa'
 
 // DR7 Supabase — signature_requests, contracts, bookings live here
 const supabase = createClient(
@@ -32,6 +33,9 @@ export const handler: Handler = async (event) => {
         if (error || !sigRequest) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Richiesta di firma non trovata' }) }
         }
+
+        // Link sostituito da un rinvio, annullato o scaduto: mai riaprirlo (utils/richiestaChiusa.ts).
+        if (richiestaChiusa(sigRequest.status)) return rispostaRichiestaChiusa(sigRequest.status)
 
         // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
         const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)

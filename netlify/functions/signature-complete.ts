@@ -7,6 +7,7 @@ import { percorsoStorage } from '../../src/utils/nomeFileSicuro'
 import crypto from 'crypto'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
+import { richiestaChiusa, rispostaRichiestaChiusa, STATI_APERTI } from './utils/richiestaChiusa'
 // DR7 Supabase — primary (signature_requests, contracts, bookings, customers_extended)
 const supabase = createClient(
     process.env.DR7_SUPABASE_URL || 'https://ahpmzjgkfxrrgxyirasa.supabase.co',
@@ -67,6 +68,9 @@ export const handler: Handler = async (event) => {
         richiestaId = sigRequest.id
         ipRichiesta = ipAddress
         uaRichiesta = userAgent
+
+        // Link sostituito da un rinvio, annullato o scaduto: mai riaprirlo (utils/richiestaChiusa.ts).
+        if (richiestaChiusa(sigRequest.status)) return rispostaRichiestaChiusa(sigRequest.status)
 
         // Link personale: solo il primo dispositivo che l'ha aperto (utils/dispositivo.ts).
         const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
@@ -651,8 +655,10 @@ export const handler: Handler = async (event) => {
         const { data: publicUrl } = supabase.storage.from('contracts').getPublicUrl(fileName)
         const signedPdfUrl = publicUrl.publicUrl
 
-        // Update signature request as signed
-        await supabase
+        // Update signature request as signed. Solo da uno stato aperto: se lo
+        // staff ha rinviato il contratto mentre il cliente firmava, questa
+        // richiesta e' gia' 'superseded' e non deve tornare 'signed'.
+        const { data: righeFirmate } = await supabase
             .from('signature_requests')
             .update({
                 status: 'signed',
@@ -664,6 +670,16 @@ export const handler: Handler = async (event) => {
                 updated_at: signedAt.toISOString()
             })
             .eq('id', sigRequest.id)
+            .in('status', STATI_APERTI)
+            .select('id')
+        if (!righeFirmate || righeFirmate.length === 0) {
+            const { data: ora } = await supabase.from('signature_requests').select('status').eq('id', sigRequest.id).maybeSingle()
+            await registraErroreFirma(sigRequest.id, `Firma non registrata: la richiesta e' passata a '${ora?.status || '?'}' durante la firma (contratto rinviato?)`, ipAddress, userAgent)
+            if (ora?.status === 'signed') {
+                return { statusCode: 400, body: JSON.stringify({ error: 'Il documento e gia stato firmato' }) }
+            }
+            return rispostaRichiestaChiusa(ora?.status)
+        }
 
         // Update contract record (only if this is a contract-based signature)
         if (sigRequest.contract_id) {
@@ -759,10 +775,19 @@ export const handler: Handler = async (event) => {
         if (sigRequest.contract_id) {
             const { data: allReqs } = await supabase
                 .from('signature_requests')
-                .select('id, status, signer_name, signer_email, signer_phone, signed_pdf_url')
+                .select('id, status, signer_name, signer_email, signer_phone, signed_pdf_url, created_at')
                 .eq('contract_id', sigRequest.contract_id)
                 .in('status', ['pending', 'otp_sent', 'otp_verified', 'signed'])
-            allSignerRequests = allReqs || []
+                .order('created_at', { ascending: false })
+            // 09/10/2026: una persona = la sua richiesta PIU' RECENTE. Una
+            // richiesta vecchia rimasta aperta (link precedente a un rinvio)
+            // non deve piu' bloccare l'invio del PDF a tutti i firmatari.
+            const perFirmatario = new Map<string, any>()
+            for (const r of allReqs || []) {
+                const chi = String(r.signer_name || r.id).trim().toLowerCase().replace(/\s+/g, ' ')
+                if (!perFirmatario.has(chi)) perFirmatario.set(chi, r)
+            }
+            allSignerRequests = Array.from(perFirmatario.values())
             totalSigners = allSignerRequests.length
             allSignersDone = allSignerRequests.length > 0 && allSignerRequests.every((r: any) => r.status === 'signed')
             console.log(`[signature-complete] ${allSignerRequests.filter((r: any) => r.status === 'signed').length}/${totalSigners} signers done. All done: ${allSignersDone}`)

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { controllaDispositivo } from './utils/dispositivo'
 import { leggiRete, descriviIpGeo, distanzaKm } from './utils/rete'
 import { registraEvento } from './utils/audit'
+import { richiestaChiusa, rispostaRichiestaChiusa } from './utils/richiestaChiusa'
 
 /**
  * 25/09/2026 — Posizione del dispositivo durante la firma.
@@ -103,6 +104,9 @@ export const handler: Handler = async (event) => {
         }
 
         const rete = leggiRete(event)
+        // Link sostituito da un rinvio, annullato o scaduto: mai riaprirlo (utils/richiestaChiusa.ts).
+        if (richiestaChiusa(sigRequest.status)) return rispostaRichiestaChiusa(sigRequest.status)
+
         const bloccoDispositivo = await controllaDispositivo(supabase, sigRequest, deviceId, event)
         if (bloccoDispositivo) return bloccoDispositivo
         const deviceLabel = null

@@ -86,6 +86,8 @@ export default function FirmaPage() {
     const [signedAt, setSignedAt] = useState<string | null>(null)
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
     const [error, setError] = useState('')
+    // 09/10/2026: link vecchio dopo un rinvio del contratto: si dice di aprire l'ultimo messaggio.
+    const [linkSostituito, setLinkSostituito] = useState(false)
     const [remainingAttempts, setRemainingAttempts] = useState(5)
     const [acceptedTerms, setAcceptedTerms] = useState(true)
     const [acceptedMarketing, setAcceptedMarketing] = useState<boolean | null>(true)
@@ -152,6 +154,8 @@ export default function FirmaPage() {
             })
 
             if (res.status === 410) {
+                const chiuso = await res.json().catch(() => ({}))
+                setLinkSostituito(chiuso.code === 'link_sostituito')
                 setStatus('expired')
                 return
             }
@@ -383,7 +387,7 @@ export default function FirmaPage() {
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
                 if (err.code === 'altro_dispositivo') { setStatus('bloccato'); return }
-                if (res.status === 410) { setStatus('expired'); return }
+                if (res.status === 410) { setLinkSostituito(err.code === 'link_sostituito'); setStatus('expired'); return }
                 // 01/10/2026: verifica del codice scaduta: si torna al primo
                 // passo, "Invia Codice di Verifica" manda un codice nuovo.
                 if (err.code === 'otp_scaduto') {
@@ -426,8 +430,10 @@ export default function FirmaPage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
                     <div className="text-5xl mb-4">&#8987;</div>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Link Scaduto</h1>
-                    <p className="text-gray-600">Il link di firma e scaduto. Contatta il mittente per ricevere un nuovo link.</p>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">{linkSostituito ? 'Link non piu valido' : 'Link Scaduto'}</h1>
+                    <p className="text-gray-600">{linkSostituito
+                        ? "Ti abbiamo inviato un link nuovo per questo contratto. Apri l'ultimo messaggio ricevuto e firma da li'."
+                        : 'Il link di firma e scaduto. Contatta il mittente per ricevere un nuovo link.'}</p>
                 </div>
             </div>
         )
