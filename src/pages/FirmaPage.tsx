@@ -266,7 +266,7 @@ export default function FirmaPage() {
 
             const data = await res.json()
             if (data.channel) setOtpChannel(data.channel)
-            const minuti = Number(data.expiresInMinutes) > 0 ? Number(data.expiresInMinutes) : 10
+            const minuti = Number(data.expiresInMinutes) > 0 ? Number(data.expiresInMinutes) : 2
             setScadenzaOtp(Date.now() + minuti * 60 * 1000)
 
             setStatus('otp_sent')
@@ -532,7 +532,7 @@ export default function FirmaPage() {
                         <div role="dialog" aria-modal="true" aria-labelledby="otp-titolo" className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
                             <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-200">
                                 <h3 id="otp-titolo" className="text-lg font-bold text-gray-800">
-                                    {otpChannel === 'email' ? 'Firma con Email OTP' : 'Firma con WhatsApp OTP'}
+                                    Firma con OTP WhatsApp o Email
                                 </h3>
                                 <button
                                     type="button"
@@ -549,9 +549,7 @@ export default function FirmaPage() {
 
                             <div className="px-5 py-6 text-center">
                                 <p className="text-gray-700 mb-5">
-                                    {otpChannel === 'email'
-                                        ? `Inserisci il codice di conferma ricevuto via email a ${signerEmail} per confermare la firma e completare il processo.`
-                                        : 'Inserisci il codice di conferma ricevuto via WhatsApp per confermare la firma e completare il processo.'}
+                                    Inserisci il codice di conferma ricevuto via WhatsApp o email per confermare la firma e completare il processo.
                                 </p>
 
                                 <input
@@ -577,7 +575,7 @@ export default function FirmaPage() {
                                         : codiceScaduto
                                             ? 'Codice scaduto: premi Invia di nuovo per riceverne uno nuovo.'
                                             : secondiRimasti !== null
-                                                ? `Inserisci il codice entro ${Math.floor(secondiRimasti / 60)}:${String(secondiRimasti % 60).padStart(2, '0')}`
+                                                ? `Inserisci il codice entro ${secondiRimasti} secondi`
                                                 : null}
                                 </p>
 

@@ -15,7 +15,9 @@ const supabase = createClient(
 const GREEN_API_INSTANCE_ID = process.env.DR7_GREEN_API_INSTANCE_ID || process.env.GREEN_API_INSTANCE_ID
 const GREEN_API_TOKEN = process.env.DR7_GREEN_API_TOKEN || process.env.GREEN_API_TOKEN
 
-const OTP_EXPIRY_MINUTES = 10
+// 09/10/2026: 120 secondi, come le firme delle finanziarie (conto alla
+// rovescia nel popup di FirmaPage).
+const OTP_EXPIRY_MINUTES = 2
 const MAX_OTP_ATTEMPTS = 5
 
 export const handler: Handler = async (event) => {
