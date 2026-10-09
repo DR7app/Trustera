@@ -70,6 +70,9 @@ async function statoPermessoPosizione(): Promise<string | null> {
     }
 }
 
+const TESTO_TERMINI = 'Confermo che i dati inseriti sono corretti e accetto i termini e le condizioni del documento.'
+const TESTO_MARKETING = 'Accetto vantaggi, offerte e sconti dedicati da DR7 Trust e partner.'
+
 export default function FirmaPage() {
     const { token } = useParams<{ token: string }>()
     const [status, setStatus] = useState<SigningStatus>('loading')
@@ -85,6 +88,10 @@ export default function FirmaPage() {
     const [acceptedMarketing, setAcceptedMarketing] = useState<boolean | null>(true)
     const [existingMarketingConsent, setExistingMarketingConsent] = useState<boolean | null>(null)
     const [showMarketingInfo, setShowMarketingInfo] = useState(false)
+    // 09/10/2026: "Riepilogo firma" prima del gesto che firma (invio del
+    // codice, pulsante, completamento): ripete le frasi delle due caselle e
+    // l'azione parte solo con "Accetta".
+    const [riepilogoFirma, setRiepilogoFirma] = useState<(() => void) | null>(null)
     const [otpChannel, setOtpChannel] = useState<'whatsapp' | 'email' | null>(null)
     // Centralina Pro > Firma del contratto: false = si firma con il pulsante,
     // senza codice.
@@ -184,6 +191,18 @@ export default function FirmaPage() {
             return false
         }
         return true
+    }
+
+    function apriRiepilogo(azione: () => void) {
+        if (!consensiDati()) return
+        setError('')
+        setRiepilogoFirma(() => azione)
+    }
+
+    function accettaRiepilogo() {
+        const azione = riepilogoFirma
+        setRiepilogoFirma(null)
+        azione?.()
     }
 
     // OTP spento in Centralina Pro: il pulsante "Firma il Contratto" e' l'atto
@@ -408,7 +427,7 @@ export default function FirmaPage() {
                         className="mt-1 h-5 w-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
                     />
                     <span className="text-sm text-gray-700">
-                        Confermo che i dati inseriti sono corretti e accetto i termini e le condizioni del documento.
+                        {TESTO_TERMINI}
                     </span>
                 </label>
 
@@ -420,7 +439,7 @@ export default function FirmaPage() {
                                 onClick={() => setShowMarketingInfo(true)}
                                 className="underline text-yellow-700 hover:text-yellow-800 transition-colors"
                             >
-                                Accetto vantaggi, offerte e sconti dedicati da DR7 Trust e partner.
+                                {TESTO_MARKETING}
                             </button>
                         </p>
                         <div className="flex gap-4">
@@ -559,7 +578,7 @@ export default function FirmaPage() {
                                         : 'Riceverai un codice a 6 cifre via WhatsApp: inserendolo il documento risulta firmato.'}
                                 </p>
                                 <button
-                                    onClick={handleRequestOtp}
+                                    onClick={() => apriRiepilogo(handleRequestOtp)}
                                     disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
                                     className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
                                 >
@@ -572,7 +591,7 @@ export default function FirmaPage() {
                                     Premendo il pulsante il documento risulta firmato.
                                 </p>
                                 <button
-                                    onClick={handleFirmaConPulsante}
+                                    onClick={() => apriRiepilogo(handleFirmaConPulsante)}
                                     disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
                                     className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
                                 >
@@ -596,7 +615,7 @@ export default function FirmaPage() {
                         </p>
                         {bloccoConsensi}
                         <button
-                            onClick={handleCompletaFirma}
+                            onClick={() => apriRiepilogo(handleCompletaFirma)}
                             disabled={!acceptedTerms || (existingMarketingConsent !== true && acceptedMarketing === null)}
                             className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-colors text-lg"
                         >
@@ -720,6 +739,49 @@ export default function FirmaPage() {
                 <span className="hidden sm:inline"> &middot; </span>
                 <span className="block sm:inline">P.IVA 04104640927</span>
             </div>
+
+            {/* Riepilogo firma: le frasi delle due caselle, poi "Accetta".
+                La frase marketing compare solo se il cliente ha detto Si. */}
+            {riepilogoFirma && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setRiepilogoFirma(null)}>
+                    <div role="dialog" aria-modal="true" aria-labelledby="riepilogo-firma-titolo" className="bg-white rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6" onClick={e => e.stopPropagation()}>
+                        <h3 id="riepilogo-firma-titolo" className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                            Riepilogo firma
+                        </h3>
+                        <ul className="text-sm text-gray-700 space-y-3 mb-6">
+                            <li className="flex items-start gap-3">
+                                <svg viewBox="0 0 20 20" className="h-5 w-5 mt-0.5 shrink-0 text-yellow-600" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0z" clipRule="evenodd" />
+                                </svg>
+                                <span>{TESTO_TERMINI}</span>
+                            </li>
+                            {acceptedMarketing === true && (
+                                <li className="flex items-start gap-3">
+                                    <svg viewBox="0 0 20 20" className="h-5 w-5 mt-0.5 shrink-0 text-yellow-600" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>{TESTO_MARKETING}</span>
+                                </li>
+                            )}
+                        </ul>
+                        <div className="flex flex-col-reverse sm:flex-row gap-3">
+                            <button
+                                onClick={() => setRiepilogoFirma(null)}
+                                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 rounded-lg transition-colors"
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                onClick={accettaRiepilogo}
+                                autoFocus
+                                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-lg transition-colors"
+                            >
+                                Accetta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Marketing Info Modal */}
             {showMarketingInfo && (
