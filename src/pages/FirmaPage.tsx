@@ -581,8 +581,11 @@ export default function FirmaPage() {
                     torna al primo passo; inserire il codice firma il documento. */}
                 {popupCodiceAperto && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                        <div role="dialog" aria-modal="true" aria-label="Codice di verifica" className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
-                            <div className="flex items-center justify-end px-5 pt-4">
+                        <div role="dialog" aria-modal="true" aria-labelledby="otp-titolo" className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
+                            <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-200">
+                                <h3 id="otp-titolo" className="text-lg font-bold text-gray-800">
+                                    Firma con OTP WhatsApp o via mail
+                                </h3>
                                 <button
                                     type="button"
                                     onClick={annullaOtp}
