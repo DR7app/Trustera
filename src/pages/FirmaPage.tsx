@@ -480,60 +480,19 @@ export default function FirmaPage() {
     )
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white py-3 px-4 sm:py-4 sm:px-6 flex items-center justify-between gap-3 shadow-sm border-b border-gray-200">
-                <img src="/dr7trust-icon.png" alt="DR7 Trust" className="h-8 sm:h-10" />
-                <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">Firma Elettronica</span>
+        <div className="min-h-screen bg-black">
+            {/* Header: fondo nero, logo al centro (09/10/2026) */}
+            <div className="py-1 px-4 flex items-center justify-center">
+                <img src="/dr7trust-icon.png" alt="DR7 Trust" className="h-16 sm:h-20" />
             </div>
 
             <div className="max-w-2xl mx-auto p-3 sm:p-6 pb-28 sm:pb-28">
-                {/* Contract Info Card */}
-                {contract && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
-                        <h1 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 break-words">
-                            {contract.vehicleName ? `Contratto ${contract.contractNumber}` : contract.contractNumber || 'Documento'}
-                        </h1>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 text-sm">
-                            <div>
-                                <span className="text-gray-500 block">Cliente</span>
-                                <span className="font-semibold break-words">{signerName}</span>
-                            </div>
-                            {contract.vehicleName && (
-                                <div>
-                                    <span className="text-gray-500 block">Veicolo</span>
-                                    <span className="font-semibold break-words">{contract.vehicleName}</span>
-                                </div>
-                            )}
-                            {contract.rentalStartDate && (
-                                <div>
-                                    <span className="text-gray-500 block">Ritiro</span>
-                                    <span className="font-semibold">
-                                        {new Date(contract.rentalStartDate).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
-                                    </span>
-                                </div>
-                            )}
-                            {contract.rentalEndDate && (
-                                <div>
-                                    <span className="text-gray-500 block">Riconsegna</span>
-                                    <span className="font-semibold">
-                                        {new Date(contract.rentalEndDate).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' })}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
                 {/* PDF Viewer */}
                 {contract?.pdfUrl && status !== 'signed' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4 sm:mb-6">
-                        <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-                            <span className="text-sm text-gray-600 font-medium">Documento</span>
-                        </div>
+                    <div className="bg-white rounded-xl overflow-hidden mb-4 sm:mb-6">
                         <iframe
                             src={`https://docs.google.com/gview?url=${encodeURIComponent(contract.pdfUrl)}&embedded=true`}
-                            className="w-full border-0 h-[60vh] sm:h-[70vh] min-h-[320px] sm:min-h-[500px]"
+                            className="w-full border-0 h-[calc(100dvh-12rem)] min-h-[320px]"
                             title="Documento PDF"
                         />
                     </div>
@@ -543,42 +502,6 @@ export default function FirmaPage() {
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-6 text-sm">
                         {error}
-                    </div>
-                )}
-
-                {/* Step 1 (09/10/2026, come le firme delle finanziarie): il
-                    documento resta a tutta pagina e in basso c'e' una barra
-                    fissa col pulsante rosso FIRMA. FIRMA apre il Riepilogo
-                    firma con le due caselle; Accetta manda il codice (o firma
-                    col pulsante se l'OTP e' spento in Centralina Pro). */}
-                {(status === 'viewing' || status === 'da_completare') && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 text-sm text-gray-700">
-                        {status === 'da_completare' && (
-                            <p className="mb-3 font-semibold text-gray-800">
-                                Il codice di verifica e' gia' stato confermato ma la firma non e' stata completata.
-                                Premi FIRMA per completarla, non serve un nuovo codice.
-                            </p>
-                        )}
-                        <p className="mb-2">
-                            Io, <strong>{signerName}</strong>, dichiaro di aver preso visione del documento
-                            {contract?.contractNumber ? ` n. ${contract.contractNumber}` : ''} e di approvarne
-                            integralmente il contenuto.
-                        </p>
-                        <p className="mb-3">
-                            {otpRequired ? (
-                                <>
-                                    Confermo che la firma viene apposta volontariamente tramite il codice di verifica
-                                    {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
-                                </>
-                            ) : (
-                                <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma".</>
-                            )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                            {gpsRequired
-                                ? "Per la sicurezza della firma DR7 registra la posizione del dispositivo: autorizzala quando il browser la chiede, senza posizione il documento non puo' essere firmato."
-                                : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
-                        </p>
                     </div>
                 )}
 
@@ -731,9 +654,12 @@ export default function FirmaPage() {
                 <span className="block sm:inline">P.IVA 04104640927</span>
             </div>
 
-            {/* Barra fissa in basso col pulsante rosso FIRMA. */}
+            {/* Barra fissa in basso col pulsante rosso FIRMA (09/10/2026, come
+                le firme delle finanziarie): FIRMA apre il Riepilogo firma con
+                la dichiarazione e le due caselle; Accetta manda il codice (o
+                firma col pulsante se l'OTP e' spento in Centralina Pro). */}
             {(status === 'viewing' || status === 'da_completare') && (
-                <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <div className="fixed bottom-0 inset-x-0 z-40 bg-black border-t border-white/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                     <div className="max-w-2xl mx-auto">
                         <button
                             onClick={apriRiepilogo}
@@ -765,6 +691,35 @@ export default function FirmaPage() {
                             </button>
                         </div>
                         <div className="px-5 pt-5">
+                            {/* Dichiarazione: prima stava sotto il contratto (09/10/2026) */}
+                            <div className="text-sm text-gray-700 mb-5">
+                                {status === 'da_completare' && (
+                                    <p className="mb-3 font-semibold text-gray-800">
+                                        Il codice di verifica e' gia' stato confermato ma la firma non e' stata completata.
+                                        Premi Accetta per completarla, non serve un nuovo codice.
+                                    </p>
+                                )}
+                                <p className="mb-2">
+                                    Io, <strong>{signerName}</strong>, dichiaro di aver preso visione del documento
+                                    {contract?.contractNumber ? ` n. ${contract.contractNumber}` : ''} e di approvarne
+                                    integralmente il contenuto.
+                                </p>
+                                <p className="mb-3">
+                                    {otpRequired ? (
+                                        <>
+                                            Confermo che la firma viene apposta volontariamente tramite il codice di verifica
+                                            {otpChannel === 'email' ? ` inviato a ${signerEmail}` : ' inviato via WhatsApp'}.
+                                        </>
+                                    ) : (
+                                        <>Confermo che la firma viene apposta volontariamente premendo il pulsante "Firma".</>
+                                    )}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {gpsRequired
+                                        ? "Per la sicurezza della firma DR7 registra la posizione del dispositivo: autorizzala quando il browser la chiede, senza posizione il documento non puo' essere firmato."
+                                        : "Per la sicurezza della firma DR7 registra la posizione del dispositivo, se la autorizzi quando il browser la chiede. Puoi firmare anche senza."}
+                                </p>
+                            </div>
                             {bloccoConsensi}
                         </div>
                         <div className="flex gap-3 px-5 py-4 bg-gray-50 border-t border-gray-200">
