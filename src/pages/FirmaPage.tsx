@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
+import { Document, Page, pdfjs } from 'react-pdf'
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 type SigningStatus = 'loading' | 'viewing' | 'da_completare' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
 
@@ -102,14 +105,32 @@ export default function FirmaPage() {
     // (netlify/functions/utils/verificaOtp.ts).
     const [otpVerificatoValido, setOtpVerificatoValido] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+    // 09/10/2026: il contratto si disegna pagina per pagina (react-pdf) a
+    // tutta larghezza, senza i comandi del visualizzatore Google (freccia,
+    // zoom) e senza spazio vuoto sotto. Se il PDF non si apre resta Google.
+    const contenitorePdf = useRef<HTMLDivElement | null>(null)
+    const [larghezzaPdf, setLarghezzaPdf] = useState(0)
+    const [pagineContratto, setPagineContratto] = useState(0)
+    const [pdfNonApribile, setPdfNonApribile] = useState(false)
     // 09/10/2026: scadenza del codice (dal server, expiresInMinutes) per il
     // conto alla rovescia del popup, come le firme delle finanziarie.
     const [scadenzaOtp, setScadenzaOtp] = useState<number | null>(null)
+    const [durataOtpSecondi, setDurataOtpSecondi] = useState(120)
     const [ora, setOra] = useState(() => Date.now())
 
     useEffect(() => {
         if (token) loadSigningData()
     }, [token])
+
+    useEffect(() => {
+        const el = contenitorePdf.current
+        if (!el) return
+        const misura = () => setLarghezzaPdf(el.clientWidth)
+        misura()
+        const ro = new ResizeObserver(misura)
+        ro.observe(el)
+        return () => ro.disconnect()
+    }, [contract?.pdfUrl, status])
 
     // Conto alla rovescia: un tick al secondo solo col popup del codice aperto.
     const popupCodiceAperto = status === 'otp_sending' || status === 'otp_sent' || status === 'otp_verifying'
@@ -267,6 +288,7 @@ export default function FirmaPage() {
             const data = await res.json()
             if (data.channel) setOtpChannel(data.channel)
             const minuti = Number(data.expiresInMinutes) > 0 ? Number(data.expiresInMinutes) : 2
+            setDurataOtpSecondi(minuti * 60)
             setScadenzaOtp(Date.now() + minuti * 60 * 1000)
 
             setStatus('otp_sent')
@@ -500,19 +522,49 @@ export default function FirmaPage() {
     return (
         <div className="min-h-screen bg-black">
             {/* Header: fondo nero, logo al centro (09/10/2026) */}
-            <div className="py-1 px-4 flex items-center justify-center">
-                <img src="/dr7trust-icon.png" alt="DR7 Trust" className="h-16 sm:h-20" />
+            <div className="pt-6 pb-5 px-4 flex items-center justify-center">
+                {/* Logo ritagliato (l'icona quadrata aveva troppo nero intorno)
+                    con alone verde fluo. */}
+                <img
+                    src="/dr7trust-logo.png"
+                    alt="DR7 Trust"
+                    className="h-14 sm:h-16 w-auto mx-auto [filter:drop-shadow(0_0_6px_#39ff14)_drop-shadow(0_0_14px_#39ff14)]"
+                />
             </div>
 
-            <div className="max-w-2xl mx-auto p-3 sm:p-6 pb-28 sm:pb-28">
+            <div className="max-w-2xl mx-auto px-3 sm:px-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
                 {/* PDF Viewer */}
                 {contract?.pdfUrl && status !== 'signed' && (
-                    <div className="bg-white rounded-xl overflow-hidden mb-4 sm:mb-6">
-                        <iframe
-                            src={`https://docs.google.com/gview?url=${encodeURIComponent(contract.pdfUrl)}&embedded=true`}
-                            className="w-full border-0 h-[calc(100dvh-12rem)] min-h-[320px]"
-                            title="Documento PDF"
-                        />
+                    <div ref={contenitorePdf} className="bg-white rounded-t-xl overflow-hidden">
+                        {pdfNonApribile ? (
+                            <iframe
+                                src={`https://docs.google.com/gview?url=${encodeURIComponent(contract.pdfUrl)}&embedded=true`}
+                                className="w-full border-0 h-[calc(100dvh-12rem)] min-h-[320px]"
+                                title="Documento PDF"
+                            />
+                        ) : (
+                            <Document
+                                file={contract.pdfUrl}
+                                onLoadSuccess={({ numPages }) => setPagineContratto(numPages)}
+                                onLoadError={() => setPdfNonApribile(true)}
+                                loading={
+                                    <div className="flex items-center justify-center py-20">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+                                    </div>
+                                }
+                            >
+                                {larghezzaPdf > 0 && Array.from({ length: pagineContratto }, (_, i) => (
+                                    <Page
+                                        key={i + 1}
+                                        pageNumber={i + 1}
+                                        width={larghezzaPdf}
+                                        renderTextLayer={false}
+                                        renderAnnotationLayer={false}
+                                        className={i > 0 ? 'border-t border-gray-200' : ''}
+                                    />
+                                ))}
+                            </Document>
+                        )}
                     </div>
                 )}
 
@@ -578,6 +630,15 @@ export default function FirmaPage() {
                                                 ? `Inserisci il codice entro ${secondiRimasti} secondi`
                                                 : null}
                                 </p>
+                                {/* Barra dei secondi: si svuota fino alla scadenza del codice */}
+                                {status !== 'otp_sending' && secondiRimasti !== null && (
+                                    <div className="mt-3 h-2 w-full max-w-xs mx-auto rounded-full bg-gray-200 overflow-hidden" aria-hidden="true">
+                                        <div
+                                            className="h-full bg-red-600 transition-[width] duration-1000 ease-linear"
+                                            style={{ width: `${Math.min(100, (secondiRimasti / durataOtpSecondi) * 100)}%` }}
+                                        />
+                                    </div>
+                                )}
 
                                 {error && (
                                     <p className="mt-4 text-sm text-red-700">{error}</p>
@@ -665,7 +726,8 @@ export default function FirmaPage() {
                 )}
             </div>
 
-            {/* Footer */}
+            {/* Footer: non con la barra FIRMA, il pulsante sta attaccato al contratto */}
+            {status !== 'viewing' && status !== 'da_completare' && (
             <div className="text-center py-6 px-4 text-xs text-gray-400 leading-relaxed">
                 <span className="block sm:inline">DR7 S.p.A.</span>
                 <span className="hidden sm:inline"> &middot; </span>
@@ -673,13 +735,14 @@ export default function FirmaPage() {
                 <span className="hidden sm:inline"> &middot; </span>
                 <span className="block sm:inline">P.IVA 04104640927</span>
             </div>
+            )}
 
             {/* Barra fissa in basso col pulsante rosso FIRMA (09/10/2026, come
                 le firme delle finanziarie): FIRMA apre il Riepilogo firma con
                 la dichiarazione e le due caselle; Accetta manda il codice (o
                 firma col pulsante se l'OTP e' spento in Centralina Pro). */}
             {(status === 'viewing' || status === 'da_completare') && (
-                <div className="fixed bottom-0 inset-x-0 z-40 bg-black border-t border-white/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <div className="fixed bottom-0 inset-x-0 z-40 bg-black px-3 sm:px-6 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                     <div className="max-w-2xl mx-auto">
                         <button
                             onClick={apriRiepilogo}
