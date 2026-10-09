@@ -710,7 +710,7 @@ export default function FirmaPage() {
                                     type="button"
                                     onClick={annullaOtp}
                                     disabled={status === 'otp_verifying'}
-                                    className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 disabled:opacity-40 font-bold py-3 rounded-lg transition-colors"
+                                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
                                 >
                                     Annulla
                                 </button>
