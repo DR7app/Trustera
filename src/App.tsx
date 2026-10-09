@@ -73,6 +73,8 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/sign/:token" element={<SignPage />} />
         <Route path="/firma/:token" element={<FirmaPage />} />
+        {/* 09/10/2026: link corto del messaggio WhatsApp, stessa pagina */}
+        <Route path="/f/:token" element={<FirmaPage />} />
         <Route path="/verify/:hash" element={<VerifyPage />} />
         <Route path="/approve/:token" element={<ApprovePage />} />
       </Routes>
