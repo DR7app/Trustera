@@ -102,10 +102,25 @@ export default function FirmaPage() {
     // (netlify/functions/utils/verificaOtp.ts).
     const [otpVerificatoValido, setOtpVerificatoValido] = useState(false)
     const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+    // 09/10/2026: scadenza del codice (dal server, expiresInMinutes) per il
+    // conto alla rovescia del popup, come le firme delle finanziarie.
+    const [scadenzaOtp, setScadenzaOtp] = useState<number | null>(null)
+    const [ora, setOra] = useState(() => Date.now())
 
     useEffect(() => {
         if (token) loadSigningData()
     }, [token])
+
+    // Conto alla rovescia: un tick al secondo solo col popup del codice aperto.
+    const popupCodiceAperto = status === 'otp_sending' || status === 'otp_sent' || status === 'otp_verifying'
+    useEffect(() => {
+        if (!popupCodiceAperto || scadenzaOtp === null) return
+        setOra(Date.now())
+        const t = setInterval(() => setOra(Date.now()), 1000)
+        return () => clearInterval(t)
+    }, [popupCodiceAperto, scadenzaOtp])
+    const secondiRimasti = scadenzaOtp === null ? null : Math.max(0, Math.ceil((scadenzaOtp - ora) / 1000))
+    const codiceScaduto = secondiRimasti === 0
 
     async function loadSigningData() {
         try {
@@ -251,6 +266,8 @@ export default function FirmaPage() {
 
             const data = await res.json()
             if (data.channel) setOtpChannel(data.channel)
+            const minuti = Number(data.expiresInMinutes) > 0 ? Number(data.expiresInMinutes) : 10
+            setScadenzaOtp(Date.now() + minuti * 60 * 1000)
 
             setStatus('otp_sent')
             setOtp(['', '', '', '', '', ''])
@@ -266,6 +283,7 @@ export default function FirmaPage() {
     function annullaOtp() {
         setOtp(['', '', '', '', '', ''])
         setError('')
+        setScadenzaOtp(null)
         setStatus('viewing')
     }
 
@@ -505,27 +523,21 @@ export default function FirmaPage() {
                     </div>
                 )}
 
-                {status === 'otp_sending' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600">Invio codice di verifica...</p>
-                    </div>
-                )}
 
                 {/* Step 2: il codice OTP si inserisce in un popup (09/10/2026,
                     sul modello delle firme con OTP delle finanziarie). Annulla
                     torna al primo passo; inserire il codice firma il documento. */}
-                {(status === 'otp_sent' || status === 'otp_verifying') && (
+                {popupCodiceAperto && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                         <div role="dialog" aria-modal="true" aria-labelledby="otp-titolo" className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
                             <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-200">
                                 <h3 id="otp-titolo" className="text-lg font-bold text-gray-800">
-                                    {otpChannel === 'email' ? 'Firma con codice via email' : 'Firma con codice WhatsApp'}
+                                    {otpChannel === 'email' ? 'Firma con Email OTP' : 'Firma con WhatsApp OTP'}
                                 </h3>
                                 <button
                                     type="button"
                                     onClick={annullaOtp}
-                                    disabled={status === 'otp_verifying'}
+                                    disabled={status !== 'otp_sent'}
                                     aria-label="Chiudi"
                                     className="text-gray-500 hover:text-gray-800 disabled:opacity-40 transition-colors"
                                 >
@@ -552,12 +564,22 @@ export default function FirmaPage() {
                                         const digits = e.target.value.replace(/\D/g, '').slice(0, 6).split('')
                                         setOtp(['', '', '', '', '', ''].map((_, i) => digits[i] || ''))
                                     }}
-                                    onKeyDown={e => { if (e.key === 'Enter' && otp.join('').length === 6) handleVerifyOtp() }}
+                                    onKeyDown={e => { if (e.key === 'Enter' && otp.join('').length === 6 && !codiceScaduto) handleVerifyOtp() }}
                                     placeholder="Codice a 6 cifre"
                                     className="w-full max-w-xs h-14 text-center text-2xl font-bold tracking-[0.4em] bg-gray-50 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-2 focus:ring-red-100 focus:outline-none transition-colors placeholder:text-base placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400"
-                                    disabled={status === 'otp_verifying'}
-                                    autoFocus
+                                    disabled={status !== 'otp_sent'}
+                                    ref={el => { otpRefs.current[0] = el }}
                                 />
+
+                                <p className={`mt-4 font-medium ${codiceScaduto ? 'text-red-700' : 'text-gray-800'}`}>
+                                    {status === 'otp_sending'
+                                        ? 'Invio del codice in corso...'
+                                        : codiceScaduto
+                                            ? 'Codice scaduto: premi Invia di nuovo per riceverne uno nuovo.'
+                                            : secondiRimasti !== null
+                                                ? `Inserisci il codice entro ${Math.floor(secondiRimasti / 60)}:${String(secondiRimasti % 60).padStart(2, '0')}`
+                                                : null}
+                                </p>
 
                                 {error && (
                                     <p className="mt-4 text-sm text-red-700">{error}</p>
@@ -571,7 +593,7 @@ export default function FirmaPage() {
                                 <button
                                     type="button"
                                     onClick={handleRequestOtp}
-                                    disabled={status === 'otp_verifying'}
+                                    disabled={status !== 'otp_sent'}
                                     className="mt-5 text-sm font-semibold italic underline text-gray-700 hover:text-gray-900 disabled:opacity-40 transition-colors"
                                 >
                                     Invia di nuovo
@@ -582,7 +604,7 @@ export default function FirmaPage() {
                                 <button
                                     type="button"
                                     onClick={annullaOtp}
-                                    disabled={status === 'otp_verifying'}
+                                    disabled={status !== 'otp_sent'}
                                     className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
                                 >
                                     Annulla
@@ -590,7 +612,7 @@ export default function FirmaPage() {
                                 <button
                                     type="button"
                                     onClick={handleVerifyOtp}
-                                    disabled={otp.join('').length !== 6 || status === 'otp_verifying'}
+                                    disabled={otp.join('').length !== 6 || status !== 'otp_sent' || codiceScaduto}
                                     className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
                                 >
                                     {status === 'otp_verifying' ? 'Firma in corso...' : 'Conferma'}
