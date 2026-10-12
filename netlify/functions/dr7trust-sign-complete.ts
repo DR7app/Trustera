@@ -131,7 +131,7 @@ async function sendWhatsAppPdf(phone: string, publicUrl: string, documentName: s
   const chatId = cleanPhoneForChatId(phone) + '@c.us'
   console.log('[dr7trust-sign-complete] Sending WhatsApp PDF to chatId:', chatId, 'url:', publicUrl)
   try {
-    const res = await fetch(`https://api.green-api.com/waInstance${idInstance}/sendFileByUrl/${apiToken}`, {
+    const res = await fetch(`https://api.greenapi.com/waInstance${idInstance}/sendFileByUrl/${apiToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

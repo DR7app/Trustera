@@ -850,7 +850,7 @@ export const handler: Handler = async (event) => {
 
             for (const cleanPhone of Array.from(phonesToSend)) {
                 try {
-                    const greenApiUrl = `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUrl/${GREEN_API_TOKEN}`
+                    const greenApiUrl = `https://api.greenapi.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUrl/${GREEN_API_TOKEN}`
                     const waResponse = await fetch(greenApiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -878,7 +878,7 @@ export const handler: Handler = async (event) => {
             const ownerPhone = process.env.TRUSTERA_OWNER_WHATSAPP || '393457905205'
             if (TRUSTERA_INSTANCE && TRUSTERA_TOKEN && TRUSTERA_INSTANCE !== GREEN_API_INSTANCE_ID) {
                 try {
-                    const dr7trustUrl = `https://api.green-api.com/waInstance${TRUSTERA_INSTANCE}/sendFileByUrl/${TRUSTERA_TOKEN}`
+                    const dr7trustUrl = `https://api.greenapi.com/waInstance${TRUSTERA_INSTANCE}/sendFileByUrl/${TRUSTERA_TOKEN}`
                     const ownerRes = await fetch(dr7trustUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

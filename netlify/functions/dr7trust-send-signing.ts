@@ -44,7 +44,7 @@ async function sendWhatsAppSigningLink(
   if (!idInstance || !apiToken) return false
 
   const chatId = cleanPhone(phone) + '@c.us'
-  const url = `https://api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`
+  const url = `https://api.greenapi.com/waInstance${idInstance}/sendMessage/${apiToken}`
 
   try {
     const res = await fetch(url, {

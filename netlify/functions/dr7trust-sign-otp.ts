@@ -36,7 +36,7 @@ async function sendWhatsAppOtp(phone: string, otp: string): Promise<boolean> {
   if (!idInstance || !apiToken) return false
 
   const chatId = cleanPhoneForChatId(phone) + '@c.us'
-  const url = `https://api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`
+  const url = `https://api.greenapi.com/waInstance${idInstance}/sendMessage/${apiToken}`
 
   try {
     const res = await fetch(url, {
