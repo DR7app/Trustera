@@ -420,7 +420,7 @@ export const handler: Handler = async (event) => {
             }
 
             const pages = pdfDoc.getPages()
-            let sealPage = pages[pages.length - 1]
+            const sealPage = pages[pages.length - 1]
             const { width: pageWidth } = sealPage.getSize()
 
             const certId = `TR-${new Date().getFullYear()}-${currentHash.slice(0, 8).toUpperCase()}`
@@ -537,85 +537,97 @@ export const handler: Handler = async (event) => {
                 sealYPos = 35
             }
 
-            // 14/10/2026 — Documento libero con posizione scelta dallo staff
-            // (tab DR7 Trust > Posiziona firma, colonna posizione_firma):
-            // {pagina 1-based, x, y} = angolo in alto a sinistra del sigillo in
-            // frazione della pagina, origine in alto a sinistra. Si converte
-            // nelle coordinate pdf-lib (origine in basso a sinistra) sul
-            // riquadro visibile della pagina. I contratti DR7 restano automatici.
-            const posizione = sigRequest.posizione_firma
-            if (!sigRequest.contract_id && posizione && Number.isInteger(Number(posizione.pagina))) {
-                const pagina = pages[Math.min(Math.max(Number(posizione.pagina), 1), pages.length) - 1]
-                const box = pagina.getCropBox()
-                const fx = Math.min(Math.max(Number(posizione.x) || 0, 0), 1)
-                const fy = Math.min(Math.max(Number(posizione.y) || 0, 0), 1)
-                sealPage = pagina
-                sealX = Math.min(Math.max(box.x + fx * box.width, box.x), box.x + box.width - sealW)
-                sealYPos = Math.min(Math.max(box.y + box.height - fy * box.height - sealH, box.y), box.y + box.height - sealH)
-                console.log(`[signature-complete] Posizione scelta dallo staff: pagina ${pages.indexOf(pagina) + 1}`)
+            // 14/10/2026 — Documento libero con posizioni scelte dallo staff
+            // (tab DR7 Trust > Posiziona firma, colonna posizione_firma): una o
+            // piu' {pagina 1-based, x, y} = angolo in alto a sinistra del
+            // sigillo in frazione della pagina, origine in alto a sinistra. Si
+            // convertono nelle coordinate pdf-lib (origine in basso a sinistra)
+            // sul riquadro visibile della pagina. I contratti DR7 restano
+            // automatici; un solo oggetto (prima versione) vale come elenco di uno.
+            const scelte: any[] = Array.isArray(sigRequest.posizione_firma)
+                ? sigRequest.posizione_firma
+                : sigRequest.posizione_firma ? [sigRequest.posizione_firma] : []
+            const posti: { pg: typeof sealPage; sx: number; sy: number }[] = []
+            if (!sigRequest.contract_id) {
+                for (const posizione of scelte) {
+                    if (!posizione || !Number.isInteger(Number(posizione.pagina))) continue
+                    const pagina = pages[Math.min(Math.max(Number(posizione.pagina), 1), pages.length) - 1]
+                    const box = pagina.getCropBox()
+                    const fx = Math.min(Math.max(Number(posizione.x) || 0, 0), 1)
+                    const fy = Math.min(Math.max(Number(posizione.y) || 0, 0), 1)
+                    posti.push({
+                        pg: pagina,
+                        sx: Math.min(Math.max(box.x + fx * box.width, box.x), box.x + box.width - sealW),
+                        sy: Math.min(Math.max(box.y + box.height - fy * box.height - sealH, box.y), box.y + box.height - sealH),
+                    })
+                }
+                if (posti.length) console.log(`[signature-complete] ${posti.length} posizioni scelte dallo staff`)
             }
+            if (!posti.length) posti.push({ pg: sealPage, sx: sealX, sy: sealYPos })
 
-            // Outer rectangle
-            sealPage.drawRectangle({
-                x: sealX, y: sealYPos, width: sealW, height: sealH,
-                borderColor: rgb(0.85, 0.85, 0.85), borderWidth: 0.75,
-                color: rgb(1, 1, 1),
-            })
-
-            // Header: logo + "Verified Seal"
-            const headerY = sealYPos + sealH - 12
-            if (logoImage) {
-                const hLogoH = 9
-                const hLogoW = (logoImage.width / logoImage.height) * hLogoH
-                sealPage.drawImage(logoImage, { x: sealX + 4, y: headerY - 1, width: hLogoW, height: hLogoH })
-                const vsX = sealX + 4 + hLogoW + 2
-                sealPage.drawText('Verified Seal', { x: vsX, y: headerY + 1, size: 4.5, font, color: sealLightGray })
-            } else {
-                sealPage.drawText('DR7 Trust  Verified Seal', { x: sealX + 4, y: headerY + 1, size: 4.5, font: fontBold, color: sealGray })
-            }
-
-            // Signer info
-            const infoX = sealX + 4
-            const infoY = headerY - 9
-            const signerDisplayName = sigRequest.signer_name || 'Firmatario'
-            sealPage.drawText(signerDisplayName, { x: infoX, y: infoY, size: 5.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
-
-            // Date + time
-            const dd = String(signedAt.getDate()).padStart(2, '0')
-            const mo = String(signedAt.getMonth() + 1).padStart(2, '0')
-            const yy = signedAt.getFullYear()
-            const hh = String(signedAt.getHours()).padStart(2, '0')
-            const mi = String(signedAt.getMinutes()).padStart(2, '0')
-            sealPage.drawText(`${dd}/${mo}/${yy} — ${hh}:${mi} CET`, { x: infoX, y: infoY - 7, size: 4, font, color: sealGray })
-
-            // Certificate ID
-            sealPage.drawText(`ID: ${certId}`, { x: infoX, y: infoY - 13, size: 3.5, font, color: sealLightGray })
-
-            // QR code (right side)
-            const qrSize = 13
-            sealPage.drawImage(qrImage, {
-                x: sealX + sealW - qrSize - 4,
-                y: infoY - 3,
-                width: qrSize, height: qrSize,
-            })
-
-            // Footer bar
-            const footerBarY = sealYPos
-            const footerBarH = 8
-            sealPage.drawText('Verifica ', { x: sealX + 4, y: footerBarY + 2, size: 3, font, color: sealLightGray })
-            sealPage.drawText('AuditTrail', { x: sealX + 4 + font.widthOfTextAtSize('Verifica ', 3), y: footerBarY + 2, size: 3, font: fontBold, color: darkGreen })
-
-            if (logoImage) {
-                const lH = 6
-                const lW = (logoImage.width / logoImage.height) * lH
-                sealPage.drawImage(logoImage, {
-                    x: sealX + sealW - lW - 4,
-                    y: footerBarY + (footerBarH - lH) / 2,
-                    width: lW, height: lH,
+            for (const { pg, sx, sy } of posti) {
+                // Outer rectangle
+                pg.drawRectangle({
+                    x: sx, y: sy, width: sealW, height: sealH,
+                    borderColor: rgb(0.85, 0.85, 0.85), borderWidth: 0.75,
+                    color: rgb(1, 1, 1),
                 })
-            }
 
-            console.log(`[signature-complete] DR7 Trust verified seal placed at x=${sealX}, y=${sealYPos}`)
+                // Header: logo + "Verified Seal"
+                const headerY = sy + sealH - 12
+                if (logoImage) {
+                    const hLogoH = 9
+                    const hLogoW = (logoImage.width / logoImage.height) * hLogoH
+                    pg.drawImage(logoImage, { x: sx + 4, y: headerY - 1, width: hLogoW, height: hLogoH })
+                    const vsX = sx + 4 + hLogoW + 2
+                    pg.drawText('Verified Seal', { x: vsX, y: headerY + 1, size: 4.5, font, color: sealLightGray })
+                } else {
+                    pg.drawText('DR7 Trust  Verified Seal', { x: sx + 4, y: headerY + 1, size: 4.5, font: fontBold, color: sealGray })
+                }
+
+                // Signer info
+                const infoX = sx + 4
+                const infoY = headerY - 9
+                const signerDisplayName = sigRequest.signer_name || 'Firmatario'
+                pg.drawText(signerDisplayName, { x: infoX, y: infoY, size: 5.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) })
+
+                // Date + time
+                const dd = String(signedAt.getDate()).padStart(2, '0')
+                const mo = String(signedAt.getMonth() + 1).padStart(2, '0')
+                const yy = signedAt.getFullYear()
+                const hh = String(signedAt.getHours()).padStart(2, '0')
+                const mi = String(signedAt.getMinutes()).padStart(2, '0')
+                pg.drawText(`${dd}/${mo}/${yy} — ${hh}:${mi} CET`, { x: infoX, y: infoY - 7, size: 4, font, color: sealGray })
+
+                // Certificate ID
+                pg.drawText(`ID: ${certId}`, { x: infoX, y: infoY - 13, size: 3.5, font, color: sealLightGray })
+
+                // QR code (right side)
+                const qrSize = 13
+                pg.drawImage(qrImage, {
+                    x: sx + sealW - qrSize - 4,
+                    y: infoY - 3,
+                    width: qrSize, height: qrSize,
+                })
+
+                // Footer bar
+                const footerBarY = sy
+                const footerBarH = 8
+                pg.drawText('Verifica ', { x: sx + 4, y: footerBarY + 2, size: 3, font, color: sealLightGray })
+                pg.drawText('AuditTrail', { x: sx + 4 + font.widthOfTextAtSize('Verifica ', 3), y: footerBarY + 2, size: 3, font: fontBold, color: darkGreen })
+
+                if (logoImage) {
+                    const lH = 6
+                    const lW = (logoImage.width / logoImage.height) * lH
+                    pg.drawImage(logoImage, {
+                        x: sx + sealW - lW - 4,
+                        y: footerBarY + (footerBarH - lH) / 2,
+                        width: lW, height: lH,
+                    })
+                }
+
+                console.log(`[signature-complete] DR7 Trust verified seal placed at x=${Math.round(sx)}, y=${Math.round(sy)}`)
+            }
         }
 
         // Add signer full name on footer right of ALL pages (offset by signerIndex to avoid overlap)
