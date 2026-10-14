@@ -6,6 +6,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 type SigningStatus = 'loading' | 'viewing' | 'da_completare' | 'otp_sending' | 'otp_sent' | 'otp_verifying' | 'signing' | 'signed' | 'expired' | 'bloccato' | 'error'
 
+// 14/10/2026: posizione della firma scelta dallo staff (tab DR7 Trust):
+// pagina 1-based, x/y = angolo in alto a sinistra del sigillo in frazione
+// della pagina. Il sigillo e' 130 x 42 pt (signature-complete).
+interface PosizioneFirma { pagina: number; x: number; y: number }
+const SIGILLO_LARGHEZZA_PT = 130
+const SIGILLO_ALTEZZA_PT = 42
+
 interface ContractInfo {
     contractNumber: string
     pdfUrl: string
@@ -82,6 +89,8 @@ export default function FirmaPage() {
     const [signerName, setSignerName] = useState('')
     const [signerEmail, setSignerEmail] = useState('')
     const [contract, setContract] = useState<ContractInfo | null>(null)
+    const [posizioniFirma, setPosizioniFirma] = useState<PosizioneFirma[]>([])
+    const [misurePagine, setMisurePagine] = useState<Record<number, { w: number; h: number }>>({})
     const [, setSignedPdfUrl] = useState<string | null>(null)
     const [signedAt, setSignedAt] = useState<string | null>(null)
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -172,6 +181,7 @@ export default function FirmaPage() {
             setSignerName(data.signerName)
             setSignerEmail(data.signerEmail)
             setContract(data.contract)
+            setPosizioniFirma(Array.isArray(data.posizioniFirma) ? data.posizioniFirma : [])
             if (data.otpChannel) setOtpChannel(data.otpChannel)
             setOtpRequired(data.otpRequired !== false)
             setGpsRequired(data.gpsRequired === true)
@@ -539,6 +549,15 @@ export default function FirmaPage() {
             </div>
 
             <div className="max-w-2xl mx-auto px-3 sm:px-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+                {/* 14/10/2026: pagine dove lo staff ha posizionato la firma. */}
+                {contract?.pdfUrl && status !== 'signed' && posizioniFirma.length > 0 && (() => {
+                    const pagine = [...new Set(posizioniFirma.map(p => Number(p.pagina)))].sort((a, b) => a - b)
+                    return (
+                        <div className="bg-red-50 border border-red-200 text-red-700 rounded-t-xl px-4 py-2 text-xs sm:text-sm">
+                            La tua firma verra' apposta nei riquadri rossi: {pagine.length === 1 ? `pagina ${pagine[0]}` : `pagine ${pagine.slice(0, -1).join(', ')} e ${pagine[pagine.length - 1]}`}.
+                        </div>
+                    )
+                })()}
                 {/* PDF Viewer */}
                 {contract?.pdfUrl && status !== 'signed' && (
                     <div ref={contenitorePdf} className="bg-white rounded-t-xl overflow-hidden">
@@ -559,16 +578,37 @@ export default function FirmaPage() {
                                     </div>
                                 }
                             >
-                                {larghezzaPdf > 0 && Array.from({ length: pagineContratto }, (_, i) => (
-                                    <Page
-                                        key={i + 1}
-                                        pageNumber={i + 1}
-                                        width={larghezzaPdf}
-                                        renderTextLayer={false}
-                                        renderAnnotationLayer={false}
-                                        className={i > 0 ? 'border-t border-gray-200' : ''}
-                                    />
-                                ))}
+                                {larghezzaPdf > 0 && Array.from({ length: pagineContratto }, (_, i) => {
+                                    const misura = misurePagine[i + 1]
+                                    const qui = misura ? posizioniFirma.filter(p => Number(p.pagina) === i + 1) : []
+                                    return (
+                                        <div key={i + 1} className="relative">
+                                            <Page
+                                                pageNumber={i + 1}
+                                                width={larghezzaPdf}
+                                                renderTextLayer={false}
+                                                renderAnnotationLayer={false}
+                                                className={i > 0 ? 'border-t border-gray-200' : ''}
+                                                onLoadSuccess={pg => setMisurePagine(prev => prev[i + 1] ? prev : { ...prev, [i + 1]: { w: pg.originalWidth, h: pg.originalHeight } })}
+                                            />
+                                            {/* 14/10/2026: dove verra' apposta la firma, come posizionata dallo staff. */}
+                                            {qui.map((p, k) => (
+                                                <div
+                                                    key={k}
+                                                    className="absolute pointer-events-none flex items-center justify-center border-2 border-dashed border-red-600 bg-red-600/10 animate-pulse"
+                                                    style={{
+                                                        left: `${p.x * 100}%`,
+                                                        top: `${p.y * 100}%`,
+                                                        width: `${(SIGILLO_LARGHEZZA_PT / misura.w) * 100}%`,
+                                                        height: `${(SIGILLO_ALTEZZA_PT / misura.h) * 100}%`,
+                                                    }}
+                                                >
+                                                    <span className="text-[9px] sm:text-[10px] font-bold text-red-700 leading-tight text-center px-0.5">La tua firma</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                })}
                             </Document>
                         )}
                     </div>

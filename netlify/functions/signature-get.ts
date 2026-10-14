@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
         // Fetch signature request
         const { data: sigRequest, error } = await supabase
             .from('signature_requests')
-            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, otp_verified_at')
+            .select('id, contract_id, booking_id, signer_name, signer_email, status, token_expires_at, signed_pdf_url, signed_at, document_url, document_name, device_id, otp_verified_at, posizione_firma')
             .eq('token', token)
             .single()
 
@@ -194,6 +194,11 @@ export const handler: Handler = async (event) => {
                 // (errore dopo l'OTP). true = la pagina offre "Completa la
                 // firma" senza nuovo codice; false = serve un codice nuovo.
                 otpVerificatoValido: otpVerificatoAncoraValido(sigRequest),
+                // 14/10/2026: dove lo staff ha posizionato la firma di questo
+                // firmatario (solo documenti liberi): la pagina li evidenzia.
+                posizioniFirma: !sigRequest.contract_id
+                    ? (Array.isArray(sigRequest.posizione_firma) ? sigRequest.posizione_firma : sigRequest.posizione_firma ? [sigRequest.posizione_firma] : [])
+                    : [],
                 contract: contract ? {
                     contractNumber: contract.contract_number,
                     pdfUrl: contractPdfUrl,
