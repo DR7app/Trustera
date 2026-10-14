@@ -420,7 +420,7 @@ export const handler: Handler = async (event) => {
             }
 
             const pages = pdfDoc.getPages()
-            const sealPage = pages[pages.length - 1]
+            let sealPage = pages[pages.length - 1]
             const { width: pageWidth } = sealPage.getSize()
 
             const certId = `TR-${new Date().getFullYear()}-${currentHash.slice(0, 8).toUpperCase()}`
@@ -535,6 +535,24 @@ export const handler: Handler = async (event) => {
                 // -> centro della riga (compatibilita' indietro).
                 sealX = (pageWidth - sealW) / 2
                 sealYPos = 35
+            }
+
+            // 14/10/2026 — Documento libero con posizione scelta dallo staff
+            // (tab DR7 Trust > Posiziona firma, colonna posizione_firma):
+            // {pagina 1-based, x, y} = angolo in alto a sinistra del sigillo in
+            // frazione della pagina, origine in alto a sinistra. Si converte
+            // nelle coordinate pdf-lib (origine in basso a sinistra) sul
+            // riquadro visibile della pagina. I contratti DR7 restano automatici.
+            const posizione = sigRequest.posizione_firma
+            if (!sigRequest.contract_id && posizione && Number.isInteger(Number(posizione.pagina))) {
+                const pagina = pages[Math.min(Math.max(Number(posizione.pagina), 1), pages.length) - 1]
+                const box = pagina.getCropBox()
+                const fx = Math.min(Math.max(Number(posizione.x) || 0, 0), 1)
+                const fy = Math.min(Math.max(Number(posizione.y) || 0, 0), 1)
+                sealPage = pagina
+                sealX = Math.min(Math.max(box.x + fx * box.width, box.x), box.x + box.width - sealW)
+                sealYPos = Math.min(Math.max(box.y + box.height - fy * box.height - sealH, box.y), box.y + box.height - sealH)
+                console.log(`[signature-complete] Posizione scelta dallo staff: pagina ${pages.indexOf(pagina) + 1}`)
             }
 
             // Outer rectangle
