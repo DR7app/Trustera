@@ -221,13 +221,22 @@ export const handler: Handler = async (event) => {
         // quella, il PDF firmato finale mostrava i DATI VECCHI. Filtrando per
         // original_pdf_hash === currentHash si riparte sempre dalla versione
         // corrente quando il contratto è stato rigenerato. ──
+        // 14/10/2026 — Documento libero inviato a PIU' firmatari dalla tab DR7
+        // Trust: stesso gruppo_firma = UN documento. Prima ogni firmatario
+        // firmava una copia sua e la copia "firmata" partiva al primo che
+        // firmava, con la sola sua firma. Ora si accumula come sui contratti.
+        const gruppoFirma: string | null = !sigRequest.contract_id ? (sigRequest.gruppo_firma || null) : null
+        const chiaveDocumento: [string, string] | null = sigRequest.contract_id
+            ? ['contract_id', sigRequest.contract_id]
+            : gruppoFirma ? ['gruppo_firma', gruppoFirma] : null
+
         let basePdfUrl = originalPdfUrl
         let isFirstSigner = true
-        if (sigRequest.contract_id) {
+        if (chiaveDocumento) {
             const { data: signedRequests } = await supabase
                 .from('signature_requests')
                 .select('id, signed_pdf_url, signed_at, original_pdf_hash')
-                .eq('contract_id', sigRequest.contract_id)
+                .eq(chiaveDocumento[0], chiaveDocumento[1])
                 .eq('status', 'signed')
                 .eq('original_pdf_hash', currentHash)
                 .neq('id', sigRequest.id)
@@ -278,6 +287,16 @@ export const handler: Handler = async (event) => {
         // riquadro in basso "Firma del garante o Firma, timbro aziendale",
         // accanto a quella del garante — non nel box "1° guidatore".
         let contrattoAziendale = false
+        if (gruppoFirma) {
+            const { data: richiesteGruppo } = await supabase
+                .from('signature_requests')
+                .select('id, created_at')
+                .eq('gruppo_firma', gruppoFirma)
+                .in('status', ['signed', 'otp_verified', 'otp_sent', 'pending'])
+                .order('created_at', { ascending: true })
+            signerIndex = Math.max((richiesteGruppo || []).findIndex((r: any) => r.id === sigRequest.id), 0)
+            console.log(`[signature-complete] Documento con piu' firmatari: indice ${signerIndex} di ${richiesteGruppo?.length || 1}`)
+        }
         if (sigRequest.contract_id) {
             const { data: allRequests } = await supabase
                 .from('signature_requests')
@@ -802,11 +821,11 @@ export const handler: Handler = async (event) => {
         let allSignersDone = true
         let totalSigners = 1
         let allSignerRequests: any[] = []
-        if (sigRequest.contract_id) {
+        if (chiaveDocumento) {
             const { data: allReqs } = await supabase
                 .from('signature_requests')
                 .select('id, status, signer_name, signer_email, signer_phone, signed_pdf_url, created_at')
-                .eq('contract_id', sigRequest.contract_id)
+                .eq(chiaveDocumento[0], chiaveDocumento[1])
                 .in('status', ['pending', 'otp_sent', 'otp_verified', 'signed'])
                 .order('created_at', { ascending: false })
             // 09/10/2026: una persona = la sua richiesta PIU' RECENTE. Una
@@ -830,7 +849,8 @@ export const handler: Handler = async (event) => {
             // sotto non faceva nemmeno un giro: il PDF non partiva a nessuno.
             // Il log diceva pure "All 1 signers done — sending", ma non c'era
             // nessun destinatario da scorrere.
-            // Su un documento autonomo il firmatario e' uno solo: se stesso.
+            // Su un documento autonomo senza gruppo_firma (invii prima del
+            // 14/10/2026, o un solo firmatario) il firmatario e' uno solo: se stesso.
             allSignerRequests = [{
                 id: sigRequest.id,
                 status: 'signed',
