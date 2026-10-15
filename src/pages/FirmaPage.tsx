@@ -123,6 +123,10 @@ export default function FirmaPage() {
     const [larghezzaPdf, setLarghezzaPdf] = useState(0)
     const [pagineContratto, setPagineContratto] = useState(0)
     const [pdfNonApribile, setPdfNonApribile] = useState(false)
+    // 15/10/2026 (richiesta direzione, video del 14/10): il contratto si
+    // sfoglia con le schede "Pagina 1, 2, 3, 4" come in DR7 Trust
+    // (Posiziona firma): una pagina alla volta invece di una colonna lunga.
+    const [paginaVista, setPaginaVista] = useState(1)
     // 09/10/2026: scadenza del codice (dal server, expiresInMinutes) per il
     // conto alla rovescia del popup, come le firme delle finanziarie.
     const [scadenzaOtp, setScadenzaOtp] = useState<number | null>(null)
@@ -558,9 +562,31 @@ export default function FirmaPage() {
                         </div>
                     )
                 })()}
+                {/* Schede pagina (15/10/2026): un tocco porta direttamente alla pagina. */}
+                {contract?.pdfUrl && status !== 'signed' && !pdfNonApribile && pagineContratto > 1 && (
+                    <div className="sticky top-0 z-30 bg-black py-2 flex flex-wrap gap-2">
+                        {Array.from({ length: pagineContratto }, (_, i) => i + 1).map(n => {
+                            const attiva = paginaVista === n
+                            const conFirma = posizioniFirma.some(p => Number(p.pagina) === n)
+                            return (
+                                <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => {
+                                        setPaginaVista(n)
+                                        contenitorePdf.current?.scrollIntoView({ block: 'start' })
+                                    }}
+                                    className={`px-3 py-1.5 rounded-full text-sm font-bold border transition-colors ${attiva ? 'bg-red-600 border-red-600 text-white' : 'border-white/30 text-white/80 hover:text-white hover:border-white/60'}`}
+                                >
+                                    Pagina {n}{conFirma ? ' (firma)' : ''}
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
                 {/* PDF Viewer */}
                 {contract?.pdfUrl && status !== 'signed' && (
-                    <div ref={contenitorePdf} className="bg-white rounded-t-xl overflow-hidden">
+                    <div ref={contenitorePdf} className="bg-white rounded-t-xl overflow-hidden scroll-mt-14">
                         {pdfNonApribile ? (
                             <iframe
                                 src={`https://docs.google.com/gview?url=${encodeURIComponent(contract.pdfUrl)}&embedded=true`}
@@ -578,7 +604,7 @@ export default function FirmaPage() {
                                     </div>
                                 }
                             >
-                                {larghezzaPdf > 0 && Array.from({ length: pagineContratto }, (_, i) => {
+                                {larghezzaPdf > 0 && Array.from({ length: pagineContratto }, (_, i) => i).filter(i => i + 1 === Math.min(paginaVista, pagineContratto)).map(i => {
                                     const misura = misurePagine[i + 1]
                                     const qui = misura ? posizioniFirma.filter(p => Number(p.pagina) === i + 1) : []
                                     return (
@@ -588,7 +614,6 @@ export default function FirmaPage() {
                                                 width={larghezzaPdf}
                                                 renderTextLayer={false}
                                                 renderAnnotationLayer={false}
-                                                className={i > 0 ? 'border-t border-gray-200' : ''}
                                                 onLoadSuccess={pg => setMisurePagine(prev => prev[i + 1] ? prev : { ...prev, [i + 1]: { w: pg.originalWidth, h: pg.originalHeight } })}
                                             />
                                             {/* 14/10/2026: dove verra' apposta la firma, come posizionata dallo staff. */}
@@ -611,6 +636,27 @@ export default function FirmaPage() {
                                 })}
                             </Document>
                         )}
+                    </div>
+                )}
+                {contract?.pdfUrl && status !== 'signed' && !pdfNonApribile && pagineContratto > 1 && (
+                    <div className="bg-white rounded-b-xl border-t border-gray-200 px-3 py-2 flex items-center justify-between text-sm">
+                        <button
+                            type="button"
+                            disabled={paginaVista <= 1}
+                            onClick={() => { setPaginaVista(v => Math.max(1, v - 1)); contenitorePdf.current?.scrollIntoView({ block: 'start' }) }}
+                            className="px-3 py-1.5 rounded-lg font-semibold text-gray-800 disabled:text-gray-300"
+                        >
+                            Precedente
+                        </button>
+                        <span className="text-gray-500">Pagina {paginaVista} di {pagineContratto}</span>
+                        <button
+                            type="button"
+                            disabled={paginaVista >= pagineContratto}
+                            onClick={() => { setPaginaVista(v => Math.min(pagineContratto, v + 1)); contenitorePdf.current?.scrollIntoView({ block: 'start' }) }}
+                            className="px-3 py-1.5 rounded-lg font-semibold text-gray-800 disabled:text-gray-300"
+                        >
+                            Successiva
+                        </button>
                     </div>
                 )}
 
