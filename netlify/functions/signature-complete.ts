@@ -5,7 +5,7 @@ import { leggiFirmaConfig } from './utils/firmaConfig'
 import { otpVerificatoAncoraValido, OTP_VERIFICATO_VALIDO_MINUTI } from './utils/verificaOtp'
 import { percorsoStorage } from '../../src/utils/nomeFileSicuro'
 import crypto from 'crypto'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts, pushGraphicsState, popGraphicsState, concatTransformationMatrix } from 'pdf-lib'
 import QRCode from 'qrcode'
 import { richiestaChiusa, rispostaRichiestaChiusa, STATI_APERTI } from './utils/richiestaChiusa'
 // DR7 Supabase — primary (signature_requests, contracts, bookings, customers_extended)
@@ -566,7 +566,9 @@ export const handler: Handler = async (event) => {
             const scelte: any[] = Array.isArray(sigRequest.posizione_firma)
                 ? sigRequest.posizione_firma
                 : sigRequest.posizione_firma ? [sigRequest.posizione_firma] : []
-            const posti: { pg: typeof sealPage; sx: number; sy: number }[] = []
+            // 15/10/2026: `scala` = grandezza del sigillo scelta dallo staff
+            // (1 = 130 x 42 pt, da 0,5 a 3); assente = 1.
+            const posti: { pg: typeof sealPage; sx: number; sy: number; scala: number }[] = []
             if (!sigRequest.contract_id) {
                 for (const posizione of scelte) {
                     if (!posizione || !Number.isInteger(Number(posizione.pagina))) continue
@@ -574,17 +576,26 @@ export const handler: Handler = async (event) => {
                     const box = pagina.getCropBox()
                     const fx = Math.min(Math.max(Number(posizione.x) || 0, 0), 1)
                     const fy = Math.min(Math.max(Number(posizione.y) || 0, 0), 1)
+                    const scala = Math.min(Math.max(Number(posizione.scala) || 1, 0.5), 3)
+                    const w = sealW * scala
+                    const h = sealH * scala
                     posti.push({
                         pg: pagina,
-                        sx: Math.min(Math.max(box.x + fx * box.width, box.x), box.x + box.width - sealW),
-                        sy: Math.min(Math.max(box.y + box.height - fy * box.height - sealH, box.y), box.y + box.height - sealH),
+                        sx: Math.min(Math.max(box.x + fx * box.width, box.x), box.x + box.width - w),
+                        sy: Math.min(Math.max(box.y + box.height - fy * box.height - h, box.y), box.y + box.height - h),
+                        scala,
                     })
                 }
                 if (posti.length) console.log(`[signature-complete] ${posti.length} posizioni scelte dallo staff`)
             }
-            if (!posti.length) posti.push({ pg: sealPage, sx: sealX, sy: sealYPos })
+            if (!posti.length) posti.push({ pg: sealPage, sx: sealX, sy: sealYPos, scala: 1 })
 
-            for (const { pg, sx, sy } of posti) {
+            for (const { pg, sx, sy, scala } of posti) {
+                // Il sigillo si disegna sempre a 130 x 42 pt; per ingrandirlo
+                // si scala tutto attorno al suo angolo in basso a sinistra.
+                if (scala !== 1) {
+                    pg.pushOperators(pushGraphicsState(), concatTransformationMatrix(scala, 0, 0, scala, sx * (1 - scala), sy * (1 - scala)))
+                }
                 // Outer rectangle
                 pg.drawRectangle({
                     x: sx, y: sy, width: sealW, height: sealH,
@@ -645,7 +656,9 @@ export const handler: Handler = async (event) => {
                     })
                 }
 
-                console.log(`[signature-complete] DR7 Trust verified seal placed at x=${Math.round(sx)}, y=${Math.round(sy)}`)
+                if (scala !== 1) pg.pushOperators(popGraphicsState())
+
+                console.log(`[signature-complete] DR7 Trust verified seal placed at x=${Math.round(sx)}, y=${Math.round(sy)}, scala=${scala}`)
             }
         }
 

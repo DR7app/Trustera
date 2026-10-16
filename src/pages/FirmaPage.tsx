@@ -8,8 +8,9 @@ type SigningStatus = 'loading' | 'viewing' | 'da_completare' | 'otp_sending' | '
 
 // 14/10/2026: posizione della firma scelta dallo staff (tab DR7 Trust):
 // pagina 1-based, x/y = angolo in alto a sinistra del sigillo in frazione
-// della pagina. Il sigillo e' 130 x 42 pt (signature-complete).
-interface PosizioneFirma { pagina: number; x: number; y: number }
+// della pagina. Il sigillo e' 130 x 42 pt (signature-complete) per `scala`
+// (15/10/2026, grandezza scelta dallo staff; assente = 1).
+interface PosizioneFirma { pagina: number; x: number; y: number; scala?: number }
 const SIGILLO_LARGHEZZA_PT = 130
 const SIGILLO_ALTEZZA_PT = 42
 
@@ -624,8 +625,8 @@ export default function FirmaPage() {
                                                     style={{
                                                         left: `${p.x * 100}%`,
                                                         top: `${p.y * 100}%`,
-                                                        width: `${(SIGILLO_LARGHEZZA_PT / misura.w) * 100}%`,
-                                                        height: `${(SIGILLO_ALTEZZA_PT / misura.h) * 100}%`,
+                                                        width: `${(SIGILLO_LARGHEZZA_PT * (p.scala || 1) / misura.w) * 100}%`,
+                                                        height: `${(SIGILLO_ALTEZZA_PT * (p.scala || 1) / misura.h) * 100}%`,
                                                     }}
                                                 >
                                                     <span className="text-[9px] sm:text-[10px] font-bold text-red-700 leading-tight text-center px-0.5">La tua firma</span>
